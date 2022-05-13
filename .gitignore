@@ -1,0 +1,7 @@
+/.idea/
+*/.idea/
+*/ddl/
+*/resources/
+*/target/
+*.iml
+*.class

@@ -1,0 +1,47 @@
+version: '3.5'
+services:
+  db:
+    build: postgresql
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+  pgadmin:
+    build: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "82:80"
+  swagger-ui:
+    build: swagger-ui
+    ports:
+      - "81:8080"
+
+
+  account-scheduler-service:
+    build: account-scheduler-service
+    networks:
+      - finance_ntwrk
+  account-service:
+    build: account-service
+    networks:
+      - finance_ntwrk
+  classfier-service:
+    build: classifier-service
+    networks:
+      - finance_ntwrk
+  report-service:
+    build: report-service
+    networks:
+      - finance_ntwrk
+  proxy:
+    build: proxy
+    ports:
+      - "80:80"
+networks:
+    finance_ntwrk:
+      name: finance_ntwrk

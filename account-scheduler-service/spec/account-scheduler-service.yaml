@@ -1,0 +1,324 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Управление личными финансами
+  contact:
+    name: ITAcademy
+    url: http://it-academy.by
+
+servers:
+  - url: http://{host}:{port}
+    description: custom server
+    variables:
+      host:
+        description: host name
+        default: localhost
+      port:
+        description: port value
+        default: "8080"
+
+tags:
+  - name: "Планирование операций"
+    description: Планирование операций по счетам
+
+paths:
+  /api/v1/scheduler/operation:
+    post:
+      tags:
+        - "Планирование операций"
+      summary: "Добавление запланированной операции по счёту"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateScheduledOperation"
+      responses:
+        '201':
+          description: Операция добавлена к счёту
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+    get:
+      tags:
+        - "Планирование операций"
+      summary: "Получить страницу запланированных операций по счёту"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfScheduledOperation'
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+  /api/v1/scheduler/operation/{uuid}/dt_update/{dt_update}:
+    put:
+      tags:
+        - "Планирование операций"
+      summary: Редактировать информацию о запланированной операции
+      parameters:
+        - in: path
+          name: uuid
+          description: Идентификатор операции которую редактируем
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: dt_update
+          required: true
+          schema:
+            type: string
+            format: int64
+          description: Дата последнего обновления записи
+      requestBody:
+        $ref: "#/components/requestBodies/CreateScheduledOperation"
+      responses:
+        '200':
+          description: Запланированная операция изменена
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+
+components:
+  requestBodies:
+    CreateScheduledOperation:
+      description: Тело для создания операции по счёту
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScheduledOperation'
+
+  responses:
+    Bad_Request:
+      description: Запрос некорректен. Сервер не может обработать запрос
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - type: array
+                items:
+                  $ref: '#/components/schemas/t_single_error_response'
+              - $ref: '#/components/schemas/t_multiple_error_response'
+          examples:
+            t_single_error_response:
+              value:
+                - logref: error
+                  message:  Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз
+            t_multiple_error_response:
+              value:
+                logref: structured_error
+                errors:
+                  - field: time_unit
+                    message: Поле должно быть положительным числом
+    Unauthorized:
+      description: Для выполнения запроса на данный адрес требуется передать токен авторизации
+    Forbidden:
+      description: Данному токенту авторизации запрещено выполнять запроса на данный адрес
+    Internal_Server_Error:
+      description: Внутренняя ошибка сервера. Сервер не смог корректно обработать запрос
+      content:
+        applicaion/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/t_single_error_response'
+          example:
+            - logref: error
+              message:  Сервер не смог корректно обработать запрос. Пожалуйста обратитесь к администратору
+  schemas:
+
+    ScheduledOperation:
+      type: object
+      description: Операция над счётом
+      allOf:
+        - $ref: '#/components/schemas/t_base_essence'
+      properties:
+        shedule:
+          $ref: '#/components/schemas/Schedule'
+        operation:
+          $ref: '#/components/schemas/Operation'
+
+    Operation:
+      type: object
+      description: Данные по операции
+      properties:
+        account:
+          description: Уникальный идентификатор счёта
+          type: string
+          format: uuid
+        description:
+          type: string
+          description: "Описание операции"
+        value:
+          type: number
+          description: |
+            Сумма операции:
+              * Отрицательная сумма - списание
+              * Положительная - пополнение
+        currency:
+          type: string
+          format: uuid
+          description: Валюта операции
+            
+
+    Schedule:
+      type: object
+      description: Настройки работы
+      properties:
+        start_time:
+          description: Дата исполнения запланированной операции (linux time)
+          type: integer
+          format: int64
+        stop_time:
+          description: Дата окончания исполнения запланированной операции (linux time)
+          type: integer
+          format: int64
+        interval:
+          description: Интервал с которым должна происходить операция
+          type: integer
+          format: int64
+        time_unit:
+          type: string
+          description: |
+            Расписание:
+              * `SECOND` - Секунды
+              * `MINUTE` - Минуты
+              * `HOUR` - Часы
+              * `DAY` - Дни
+              * `WEEK` - Недели
+              * `MONTH` - Месяцы
+              * `YEAR` - Года
+          enum:
+            - "SECOND"
+            - "MINUTE"
+            - "HOUR"
+            - "DAY"
+            - "WEEK"
+            - "MONTH"
+            - "YEAR"
+
+    PageOfScheduledOperation:
+      type: object
+      description: Операции
+      allOf:
+        - $ref: '#/components/schemas/t_page'
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduledOperation'
+
+    t_base_essence:
+      type: object
+      description: Описание базовой сущности.
+      required:
+        - uuid
+        - dt_create
+        - dt_update
+      properties:
+        uuid:
+          description: Уникальный идентификатор сущности
+          type: string
+          format: uuid
+          readOnly: true
+        dt_create:
+          description: Дата создания сущности (linux time)
+          type: number
+          format: int64
+          readOnly: true
+        dt_update:
+          description: Дата последнего обновления сущности (linux time)
+          type: integer
+          format: int64
+          readOnly: true
+
+    t_page:
+      type: object
+      required:
+        - number
+        - size
+        - total_pages
+        - total_elements
+        - content
+        - first
+        - number_of_elements
+        - last
+      description: Страница с опросами
+      properties:
+        number:
+          type: integer
+          description: Номер страницы
+        size:
+          description: Размер страницы
+          type: integer
+        total_pages:
+          description: Количество страниц
+          type: integer
+        total_elements:
+          description: Количество записей
+          type: integer
+        first:
+          description: Признак является ли элемент первым
+          type: boolean
+        number_of_elements:
+          description: Номер элемента
+          type: integer
+        last:
+          description: Признак является ли элемент последним
+          type: boolean
+
+    t_single_error_response:
+      type: object
+      description: Ошибка. Содержит общее описание ошибки
+      required:
+        - logref
+        - message
+      properties:
+        logref:
+          type: string
+          description: Тип ошибки
+          example: error
+        message:
+          description: Сообщение ошибки
+          type: string
+          example: Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз
+
+    t_multiple_error_response:
+      type: object
+      description: Ошибка. Содержит описание ошибок со ссылками на поля сущности
+      required:
+        - logref
+        - errors
+      properties:
+        logref:
+          type: string
+          description: Тип ошибки
+        errors:
+          description: Наименование ошибочного поля
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Сообщение об ошибке
+                example: Поле должно быть положительным числом
+              field:
+                type: string
+                description: Наименование ошибочного поля
+                example: time_unit

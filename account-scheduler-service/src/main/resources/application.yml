@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/account_scheduler_service?ApplicationName=scheduler
+    username: postgres
+    password: postgres
+  mvc:
+    quartz:
+      job-store-type: jdbc
+      jdbc:
+        initialize-schema: never
+        platform: postgres
+      properties:
+        "org.quartz.jobStore.driverDelegateClass": "org.quartz.impl.jdbcjobstore.PostgreSQLDelegate"
+        "org.quartz.jobStore.tablePrefix": "quartz.QRTZ_"
+server:
+  port : 8082

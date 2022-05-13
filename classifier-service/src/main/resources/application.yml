@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/classifier_service?ApplicationName=classifier_service
+    username: postgres
+    password: postgres
+server:
+  port : 8081
