@@ -4,3 +4,6 @@ spring:
     url: jdbc:postgresql://localhost:5433/account_service?ApplicationName=account_service
     username: postgres
     password: postgres
+
+classifier_currency_url : http://localhost:8081/backend/classifier/currency
+classifier_category_url : http://localhost:8081/backend/classifier/operation/category

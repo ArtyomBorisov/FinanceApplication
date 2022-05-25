@@ -1,5 +1,6 @@
 package by.itacademy.account.model;
 
+import by.itacademy.account.model.api.Type;
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;

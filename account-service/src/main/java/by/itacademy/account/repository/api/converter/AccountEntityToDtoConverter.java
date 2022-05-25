@@ -1,7 +1,7 @@
 package by.itacademy.account.repository.api.converter;
 
 import by.itacademy.account.model.Account;
-import by.itacademy.account.model.Type;
+import by.itacademy.account.model.api.Type;
 import by.itacademy.account.repository.entity.AccountEntity;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;

@@ -41,7 +41,8 @@ public class Operation {
     @JsonProperty("currency")
     private UUID currency;
 
-    @JsonIgnore
+//    @JsonIgnore
+    @JsonProperty("account")
     private Account account;
 
     public UUID getId() {

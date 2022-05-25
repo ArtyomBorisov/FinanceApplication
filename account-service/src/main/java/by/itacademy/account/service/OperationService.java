@@ -2,34 +2,36 @@ package by.itacademy.account.service;
 
 import by.itacademy.account.model.Operation;
 import by.itacademy.account.repository.api.IOperationRepository;
+import by.itacademy.account.repository.api.ParamSort;
 import by.itacademy.account.repository.entity.OperationEntity;
-import by.itacademy.account.service.api.IAccountService;
-import by.itacademy.account.service.api.IOperationService;
-import by.itacademy.account.service.api.ValidationError;
-import by.itacademy.account.service.api.ValidationException;
-import com.sun.istack.NotNull;
+import by.itacademy.account.service.api.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 public class OperationService implements IOperationService {
+
+    @Value("${classifier_currency_url}")
+    private String currencyUrl;
+
+    @Value("${classifier_category_url}")
+    private String categoryUrl;
 
     private final IOperationRepository operationRepository;
     private final IAccountService accountService;
@@ -51,15 +53,10 @@ public class OperationService implements IOperationService {
         List<ValidationError> errors = new ArrayList<>();
 
         this.checkOperation(operation, errors);
-
-        if (idAccount == null) {
-            errors.add(new ValidationError("idAccount", "Не передан id счёта"));
-        } else if (!this.accountService.isAccountExist(idAccount)) {
-            errors.add(new ValidationError("idAccount", "Передан id несуществующего счёта"));
-        }
+        this.checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(Errors.INCORRECT_PARAMS, errors);
         }
 
         if (operation.getDate() == null) {
@@ -78,7 +75,7 @@ public class OperationService implements IOperationService {
             this.operationRepository.save(
                     this.conversionService.convert(operation, OperationEntity.class));
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.name(), e);
         }
 
         return this.get(idAccount, idOperation);
@@ -88,30 +85,128 @@ public class OperationService implements IOperationService {
     public Page<Operation> get(UUID idAccount, Pageable pageable) {
         List<ValidationError> errors = new ArrayList<>();
 
-        if (idAccount == null) {
-            errors.add(new ValidationError("idAccount", "Не передан id аккаунта"));
-        } else if (!this.accountService.isAccountExist(idAccount)) {
-            errors.add(new ValidationError("idAccount", "Передан id несуществующего аккаунта"));
-        }
+        this.checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(Errors.INCORRECT_PARAMS, errors);
         }
 
-        List<Operation> operationList = new ArrayList<>();
         List<OperationEntity> tempList;
 
         try {
             tempList = this.operationRepository.findByAccountEntity_IdOrderByDtCreateAsc(idAccount);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.name(), e);
         }
 
-        if (!tempList.isEmpty()) {
-            operationList = tempList.stream()
-                    .map(entity -> this.conversionService.convert(entity, Operation.class))
-                    .collect(Collectors.toList());
+        List<Operation> operationList = tempList.stream()
+                .map(entity -> this.conversionService.convert(entity, Operation.class))
+                .collect(Collectors.toList());
+
+
+        int start = (int)pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), operationList.size());
+        return new PageImpl<>(operationList.subList(start, end), pageable, operationList.size());
+    }
+
+    @Override
+    public Page<Operation> getByParams(Map<String, Object> params, Pageable pageable) {
+        Object type = params.get("type");
+        Object accountsObj = params.get("accounts");
+        Object categoriesObj = params.get("categories");
+        Object fromDateObj = params.get("from");
+        Object toDateObj = params.get("to");
+
+        Sort sort;
+        List<UUID> accountsUuid = null;
+        List<UUID> categoriesUuid = null;
+        LocalDateTime from = null;
+        LocalDateTime to = null;
+
+        if (type instanceof String) {
+            ParamSort paramSort = ParamSort.valueOf((String) type);
+
+            switch (paramSort) {
+                case BY_CATEGORY_NAME:
+                    sort = Sort.by(Sort.Direction.ASC, "date");
+                    break;
+//                case BY_DATE_AND_TIME:
+//                    sort = Sort.by(Sort.Direction.ASC, "date");
+//                    break;
+                default:
+                    throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            }
+        } else {
+            throw new ValidationException(Errors.INCORRECT_DATA.toString());
         }
+
+        try {
+            if (accountsObj instanceof Collection) {
+                accountsUuid = ((Collection<?>) accountsObj).stream()
+                        .map(uuid -> UUID.fromString((String) uuid))
+                        .collect(Collectors.toList());
+            } else if (accountsObj != null) {
+                throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            }
+
+            if (categoriesObj instanceof Collection) {
+                categoriesUuid = ((Collection<?>) categoriesObj).stream()
+                        .map(uuid -> UUID.fromString((String) uuid))
+                        .collect(Collectors.toList());
+            } else if (categoriesObj != null) {
+                throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+        }
+
+        if (fromDateObj instanceof Number) {
+            LocalDate dt = LocalDate.ofEpochDay((int) fromDateObj);
+            from = LocalDateTime.of(dt, LocalTime.MIN);
+        } else if (fromDateObj != null) {
+            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+        }
+
+        if (toDateObj instanceof Number) {
+            LocalDate dt = LocalDate.ofEpochDay((int) toDateObj);
+            to = LocalDateTime.of(dt, LocalTime.MAX);
+        } else if (toDateObj != null) {
+            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+        }
+
+        if (from != null && to == null) {
+            to = LocalDateTime.of(from.plusDays(90).toLocalDate(), LocalTime.MAX);
+        } else if (from == null && to != null) {
+            from = LocalDateTime.of(to.minusDays(90).toLocalDate(), LocalTime.MIN);
+        } else if (from == null && to == null) {
+            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+        }
+
+        List<OperationEntity> entities;
+
+        if (!emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
+             entities = this.operationRepository
+                    .findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
+                            accountsUuid, categoriesUuid, from, to, sort);
+
+        } else if (emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
+            entities = this.operationRepository
+                    .findByCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
+                            categoriesUuid, from, to, sort);
+
+        } else if (!emptyOrNull(accountsUuid) && emptyOrNull(categoriesUuid)) {
+            entities = this.operationRepository
+                    .findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(
+                            accountsUuid, from, to, sort);
+
+        } else {
+            entities = this.operationRepository
+                    .findByDateGreaterThanEqualAndDateLessThanEqual(from, to, sort);
+        }
+
+        List<Operation> operationList = entities.stream()
+                .map(entity -> this.conversionService.convert(entity, Operation.class))
+                .collect(Collectors.toList());
 
         int start = (int)pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), operationList.size());
@@ -123,20 +218,20 @@ public class OperationService implements IOperationService {
         List<ValidationError> errors = new ArrayList<>();
         OperationEntity entity = null;
 
-        if (idAccount == null) {
-            errors.add(new ValidationError("idAccount", "Не передан id аккаунта"));
-        } else if (!this.accountService.isAccountExist(idAccount)) {
-            errors.add(new ValidationError("idAccount", "Передан id несуществующего аккаунта"));
-        }
+        this.checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(Errors.INCORRECT_PARAMS.toString(), errors);
         }
 
         try {
-            entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).get();
+            entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+        }
+
+        if (entity == null) {
+            throw new ValidationException(Errors.INCORRECT_DATA.toString());
         }
 
         return this.conversionService.convert(entity, Operation.class);
@@ -149,18 +244,27 @@ public class OperationService implements IOperationService {
         OperationEntity entity = null;
 
         this.checkOperation(operation, errors);
-        this.checkIdOperation(idOperation, idAccount, errors);
+
+        if (this.checkIdAccount(idAccount, errors)) {
+            this.checkIdOperation(idOperation, idAccount, errors);
+        }
 
         try {
             entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
         }
 
-        this.checkDtUpdate(dtUpdate, entity, errors);
+        if (entity != null) {
+            this.checkDtUpdate(dtUpdate, entity, errors);
+        }
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(Errors.INCORRECT_PARAMS.toString(), errors);
+        }
+
+        if (operation.getDate() == null) {
+            operation.setDate(LocalDateTime.now());
         }
 
         entity.setDate(operation.getDate());
@@ -169,13 +273,15 @@ public class OperationService implements IOperationService {
         entity.setValue(operation.getValue());
         entity.setCurrency(operation.getCurrency());
 
+        OperationEntity save = null;
+
         try {
-            this.operationRepository.save(entity);
+            save = this.operationRepository.save(entity);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
         }
 
-        return this.get(idAccount, idOperation);
+        return this.conversionService.convert(save, Operation.class);
     }
 
     @Transactional
@@ -184,30 +290,28 @@ public class OperationService implements IOperationService {
         List<ValidationError> errors = new ArrayList<>();
         OperationEntity entity = null;
 
-        if (idAccount == null) {
-            errors.add(new ValidationError("idAccount", "Не передан id аккаунта"));
-        } else if (!this.accountService.isAccountExist(idAccount)) {
-            errors.add(new ValidationError("idAccount", "Передан id несуществующего аккаунта"));
+        if (this.checkIdAccount(idAccount, errors)) {
+            this.checkIdOperation(idOperation, idAccount, errors);
         }
-
-        this.checkIdOperation(idOperation, idAccount, errors);
 
         try {
             entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
         }
 
-        this.checkDtUpdate(dtUpdate, entity, errors);
+        if (entity != null) {
+            this.checkDtUpdate(dtUpdate, entity, errors);
+        }
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(Errors.INCORRECT_PARAMS.toString(), errors);
         }
 
         try {
             this.operationRepository.delete(entity);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
         }
     }
 
@@ -217,8 +321,8 @@ public class OperationService implements IOperationService {
             return;
         }
 
-        String currencyClassifierUrl = "http://localhost:8081/classifier/currency/" + operation.getCurrency() + "/";
-        String categoryClassifierUrl = "http://localhost:8081/classifier/operation/category/" + operation.getCategory() + "/";
+        String currencyClassifierUrl = this.currencyUrl + "/" + operation.getCurrency();
+        String categoryClassifierUrl = this.categoryUrl + "/" + operation.getCategory();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(headers);
@@ -249,7 +353,7 @@ public class OperationService implements IOperationService {
     }
 
     private void checkIdOperation(UUID idOperation,
-                                  @NotNull UUID idAccount,
+                                  UUID idAccount,
                                   List<ValidationError> errors) {
         if (idOperation == null) {
             errors.add(new ValidationError("idOperation", "Не передан id операции"));
@@ -257,11 +361,13 @@ public class OperationService implements IOperationService {
         }
 
         try {
-            if (this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
+            if (idAccount != null
+                    && this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
+
                 errors.add(new ValidationError("idOperation", "Передан id не существующей операции"));
             }
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
         }
     }
 
@@ -273,5 +379,20 @@ public class OperationService implements IOperationService {
         } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
             errors.add(new ValidationError("dtUpdate", "Передан неправильный параметр последнего обновления"));
         }
+    }
+
+    private boolean checkIdAccount(UUID idAccount, List<ValidationError> errors) {
+        if (idAccount == null) {
+            errors.add(new ValidationError("idAccount", "Не передан id аккаунта"));
+            return false;
+        } else if (!this.accountService.isAccountExist(idAccount)) {
+            errors.add(new ValidationError("idAccount", "Передан id несуществующего аккаунта"));
+            return false;
+        }
+        return true;
+    }
+
+    private boolean emptyOrNull(List list) {
+        return list == null || list.isEmpty();
     }
 }

@@ -27,6 +27,15 @@ public class ValidationException extends IllegalArgumentException {
         super(cause);
     }
 
+    public ValidationException(Errors errors) {
+        super(errors.name());
+    }
+
+    public ValidationException(Errors incorrectParams, List<ValidationError> errors) {
+        super(incorrectParams.name());
+        this.errors = errors;
+    }
+
     public int getCountErrors() {
         return errors.size();
     }

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -48,7 +49,8 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         }
 
         if (this.nullOrEmpty(currency.getDescription())) {
-            errors.add(new ValidationError("description", "Не передано описание валюты (или передан пустой)"));
+            errors.add(new ValidationError("description",
+                    "Не передано описание валюты (или передано пустой)"));
         }
 
         if (!errors.isEmpty()) {
@@ -62,14 +64,16 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         currency.setDtCreate(now);
         currency.setDtUpdate(now);
 
+        CurrencyEntity saveEntity;
+
         try {
-            this.currencyRepository.save(
+            saveEntity = this.currencyRepository.save(
                     this.conversionService.convert(currency, CurrencyEntity.class));
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выполнения SQL", e);
         }
 
-        return this.get(id);
+        return this.conversionService.convert(saveEntity, Currency.class);
     }
 
     @Override
@@ -106,6 +110,27 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         }
 
         return this.conversionService.convert(entity, Currency.class);
+    }
+
+    @Override
+    public Page<Currency> get(Collection<UUID> collectionId, Pageable pageable) {
+        List<Currency> data;
+
+        if (collectionId == null || collectionId.isEmpty()) {
+            data = this.currencyRepository.findAll()
+                    .stream()
+                    .map(entity -> this.conversionService.convert(entity, Currency.class))
+                    .collect(Collectors.toList());
+        } else {
+            data = this.currencyRepository.findByIdInOrderByTitle(collectionId)
+                    .stream()
+                    .map(entity -> this.conversionService.convert(entity, Currency.class))
+                    .collect(Collectors.toList());
+        }
+
+        int start = (int)pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), data.size());
+        return new PageImpl<>(data.subList(start, end), pageable, data.size());
     }
 
     private boolean nullOrEmpty(String str) {

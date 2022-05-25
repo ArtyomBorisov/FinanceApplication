@@ -13,8 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,22 +45,24 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         category.setDtCreate(now);
         category.setDtUpdate(now);
 
+        CategoryEntity saveEntity;
+
         try {
-            this.categoryRepository.save(
+            saveEntity = this.categoryRepository.save(
                     this.conversionService.convert(category, CategoryEntity.class));
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выполнения SQL", e);
         }
 
-        return this.get(id);
+        return this.conversionService.convert(saveEntity, Category.class);
     }
 
     @Override
     public Page<Category> get(Pageable pageable) {
-        List<CategoryEntity> entities;
+        Collection<CategoryEntity> entities;
 
         try {
-            entities = this.categoryRepository.findAll();
+            entities = this.categoryRepository.findByOrderByTitle();
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выполнения SQL", e);
         }
@@ -90,5 +91,26 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         }
 
         return this.conversionService.convert(entity, Category.class);
+    }
+
+    @Override
+    public Page<Category> get(Collection<UUID> collectionId, Pageable pageable) {
+        List<Category> data;
+
+        if (collectionId == null || collectionId.isEmpty()) {
+            data = this.categoryRepository.findByOrderByTitle()
+                    .stream()
+                    .map(entity -> this.conversionService.convert(entity, Category.class))
+                    .collect(Collectors.toList());
+        } else {
+            data = this.categoryRepository.findByIdInOrderByTitle(collectionId)
+                    .stream()
+                    .map(entity -> this.conversionService.convert(entity, Category.class))
+                    .collect(Collectors.toList());
+        }
+
+        int start = (int)pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), data.size());
+        return new PageImpl<>(data.subList(start, end), pageable, data.size());
     }
 }

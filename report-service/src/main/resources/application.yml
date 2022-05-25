@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/report_service?ApplicationName=report_service
+    username: postgres
+    password: postgres
+
+server:
+  port : 8083
+
+account_url : http://localhost:8080/account
+operation_sorted_by_dt_backend_url : http://localhost:8080/backend/operation
+operation_sorted_by_category_backend_url : http://localhost:8080/backend/operation
+account_backend_url : http://localhost:8080/backend/account
+classifier_currency_url : http://localhost:8081/classifier/currency
+classifier_currency_backend_url : http://localhost:8081/backend/classifier/currency
+classifier_category_backend_url : http://localhost:8081/backend/classifier/operation/category
+
+
+font_name : Calibri

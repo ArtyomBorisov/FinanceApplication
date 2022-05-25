@@ -11,7 +11,9 @@ import java.io.IOException;
 @JsonComponent
 public class CustomPageSerializer extends JsonSerializer<Page<?>> {
     @Override
-    public void serialize(Page<?> page, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(Page<?> page,
+                          JsonGenerator jsonGenerator,
+                          SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeNumberField("number", page.getNumber());
         jsonGenerator.writeNumberField("size", page.getSize());
