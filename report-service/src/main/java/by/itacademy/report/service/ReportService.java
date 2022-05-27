@@ -93,20 +93,17 @@ public class ReportService implements IReportService {
 
     @Override
     public Page<Report> get(Pageable pageable) {
-        Collection<ReportEntity> collection;
+        Page<ReportEntity> entities;
+
         try {
-            collection = this.reportRepository.findByOrderByDtCreateAsc();
+            entities = this.reportRepository.findByOrderByDtCreateAsc(pageable);
         } catch (Exception e) {
             throw new RuntimeException(Errors.SQL_ERROR.name(), e);
         }
 
-        List<Report> data = collection.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Report.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), data.size());
-        return new PageImpl<>(data.subList(start, end), pageable, data.size());
+                .collect(Collectors.toList()));
     }
 
     @Override

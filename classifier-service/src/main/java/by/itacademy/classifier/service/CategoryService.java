@@ -59,21 +59,17 @@ public class CategoryService implements IClassifierService<Category, UUID> {
 
     @Override
     public Page<Category> get(Pageable pageable) {
-        Collection<CategoryEntity> entities;
+        Page<CategoryEntity> entities;
 
         try {
-            entities = this.categoryRepository.findByOrderByTitle();
+            entities = this.categoryRepository.findByOrderByTitle(pageable);
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выполнения SQL", e);
         }
 
-        List<Category> categoryList = entities.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Category.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), categoryList.size());
-        return new PageImpl<>(categoryList.subList(start, end), pageable, categoryList.size());
+                .collect(Collectors.toList()));
     }
 
     @Override
@@ -95,22 +91,16 @@ public class CategoryService implements IClassifierService<Category, UUID> {
 
     @Override
     public Page<Category> get(Collection<UUID> collectionId, Pageable pageable) {
-        List<Category> data;
+        Page<CategoryEntity> entities;
 
         if (collectionId == null || collectionId.isEmpty()) {
-            data = this.categoryRepository.findByOrderByTitle()
-                    .stream()
-                    .map(entity -> this.conversionService.convert(entity, Category.class))
-                    .collect(Collectors.toList());
+            entities = this.categoryRepository.findByOrderByTitle(pageable);
         } else {
-            data = this.categoryRepository.findByIdInOrderByTitle(collectionId)
-                    .stream()
-                    .map(entity -> this.conversionService.convert(entity, Category.class))
-                    .collect(Collectors.toList());
+            entities = this.categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
 
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), data.size());
-        return new PageImpl<>(data.subList(start, end), pageable, data.size());
+        return new PageImpl<>(entities.stream()
+                .map(entity -> this.conversionService.convert(entity, Category.class))
+                .collect(Collectors.toList()));
     }
 }

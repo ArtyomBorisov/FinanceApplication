@@ -78,21 +78,17 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
 
     @Override
     public Page<Currency> get(Pageable pageable) {
-        List<CurrencyEntity> entities;
+        Page<CurrencyEntity> entities;
 
         try {
-            entities = this.currencyRepository.findAll();
+            entities = this.currencyRepository.findAll(pageable);
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выполнения SQL", e);
         }
 
-        List<Currency> currencyList = entities.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Currency.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), currencyList.size());
-        return new PageImpl<>(currencyList.subList(start, end), pageable, currencyList.size());
+                .collect(Collectors.toList()));
     }
 
     @Override
@@ -114,23 +110,17 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
 
     @Override
     public Page<Currency> get(Collection<UUID> collectionId, Pageable pageable) {
-        List<Currency> data;
+        Page<CurrencyEntity> entities;
 
         if (collectionId == null || collectionId.isEmpty()) {
-            data = this.currencyRepository.findAll()
-                    .stream()
-                    .map(entity -> this.conversionService.convert(entity, Currency.class))
-                    .collect(Collectors.toList());
+            entities = this.currencyRepository.findAll(pageable);
         } else {
-            data = this.currencyRepository.findByIdInOrderByTitle(collectionId)
-                    .stream()
-                    .map(entity -> this.conversionService.convert(entity, Currency.class))
-                    .collect(Collectors.toList());
+            entities = this.currencyRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
 
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), data.size());
-        return new PageImpl<>(data.subList(start, end), pageable, data.size());
+        return new PageImpl<>(entities.stream()
+                .map(entity -> this.conversionService.convert(entity, Currency.class))
+                .collect(Collectors.toList()));
     }
 
     private boolean nullOrEmpty(String str) {

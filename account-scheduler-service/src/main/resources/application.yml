@@ -13,5 +13,9 @@ spring:
       properties:
         "org.quartz.jobStore.driverDelegateClass": "org.quartz.impl.jdbcjobstore.PostgreSQLDelegate"
         "org.quartz.jobStore.tablePrefix": "quartz.QRTZ_"
+
+classifier_currency_url : http://localhost:8081/backend/classifier/currency
+classifier_category_url : http://localhost:8081/backend/classifier/operation/category
+
 server:
   port : 8082

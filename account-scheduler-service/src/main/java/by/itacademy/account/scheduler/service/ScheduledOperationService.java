@@ -9,6 +9,7 @@ import by.itacademy.account.scheduler.service.api.IScheduledOperationService;
 import by.itacademy.account.scheduler.service.api.ISchedulerService;
 import by.itacademy.account.scheduler.service.api.ValidationError;
 import by.itacademy.account.scheduler.service.api.ValidationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -31,6 +32,15 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class ScheduledOperationService implements IScheduledOperationService {
+
+    @Value("${account_url}")
+    private String accountUrl;
+
+    @Value("${classifier_currency_url}")
+    private String currencyUrl;
+
+    @Value("${classifier_category_url}")
+    private String categoryUrl;
 
     private final IScheduledOperationRepository scheduledOperationRepository;
     private final ConversionService conversionService;
@@ -105,21 +115,17 @@ public class ScheduledOperationService implements IScheduledOperationService {
 
     @Override
     public Page<ScheduledOperation> get(Pageable pageable) {
-        List<ScheduledOperationEntity> entities;
+        Page<ScheduledOperationEntity> entities;
 
         try {
-            entities = this.scheduledOperationRepository.findByOrderByDtCreateAsc();
+            entities = this.scheduledOperationRepository.findByOrderByDtCreateAsc(pageable);
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выполнения SQL", e);
         }
 
-        List<ScheduledOperation> result = entities.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, ScheduledOperation.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), result.size());
-        return new PageImpl<>(result.subList(start, end), pageable, result.size());
+                .collect(Collectors.toList()));
     }
 
     @Transactional
@@ -221,9 +227,9 @@ public class ScheduledOperationService implements IScheduledOperationService {
             return;
         }
 
-        String currencyClassifierUrl = "http://localhost:8081/classifier/currency/" + operation.getCurrency() + "/";
-        String categoryClassifierUrl = "http://localhost:8081/classifier/operation/category/" + operation.getCategory() + "/";
-        String accountServiceUrl = "http://localhost:8080/account/" + operation.getAccount() + "/";
+        String currencyClassifierUrl = this.currencyUrl + "/" + operation.getCurrency();
+        String categoryClassifierUrl = this.categoryUrl + "/" + operation.getCategory();
+        String accountServiceUrl = this.accountUrl + "/" + operation.getAccount();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

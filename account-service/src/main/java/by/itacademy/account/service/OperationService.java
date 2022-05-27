@@ -91,22 +91,17 @@ public class OperationService implements IOperationService {
             throw new ValidationException(Errors.INCORRECT_PARAMS, errors);
         }
 
-        List<OperationEntity> tempList;
+        Page<OperationEntity> entities;
 
         try {
-            tempList = this.operationRepository.findByAccountEntity_IdOrderByDtCreateAsc(idAccount);
+            entities = this.operationRepository.findByAccountEntity_IdOrderByDtCreateAsc(idAccount, pageable);
         } catch (Exception e) {
             throw new RuntimeException(Errors.SQL_ERROR.name(), e);
         }
 
-        List<Operation> operationList = tempList.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Operation.class))
-                .collect(Collectors.toList());
-
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), operationList.size());
-        return new PageImpl<>(operationList.subList(start, end), pageable, operationList.size());
+                .collect(Collectors.toList()));
     }
 
     @Override
@@ -117,7 +112,7 @@ public class OperationService implements IOperationService {
         Object fromDateObj = params.get("from");
         Object toDateObj = params.get("to");
 
-        Sort sort;
+        List<Sort.Order> orders = new ArrayList<>();
         List<UUID> accountsUuid = null;
         List<UUID> categoriesUuid = null;
         LocalDateTime from = null;
@@ -128,11 +123,12 @@ public class OperationService implements IOperationService {
 
             switch (paramSort) {
                 case BY_CATEGORY_NAME:
-                    sort = Sort.by(Sort.Direction.ASC, "date");
+                    orders.add(new Sort.Order(Sort.Direction.ASC, "category"));
+                    orders.add(new Sort.Order(Sort.Direction.ASC, "value"));
                     break;
-//                case BY_DATE_AND_TIME:
-//                    sort = Sort.by(Sort.Direction.ASC, "date");
-//                    break;
+                case BY_DATE_AND_TIME:
+                    orders.add(new Sort.Order(Sort.Direction.ASC, "date"));
+                    break;
                 default:
                     throw new ValidationException(Errors.INCORRECT_DATA.toString());
             }
@@ -182,35 +178,31 @@ public class OperationService implements IOperationService {
             throw new ValidationException(Errors.INCORRECT_DATA.toString());
         }
 
-        List<OperationEntity> entities;
+        Page<OperationEntity> entities;
 
         if (!emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
              entities = this.operationRepository
                     .findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            accountsUuid, categoriesUuid, from, to, sort);
+                            accountsUuid, categoriesUuid, from, to, Sort.by(orders), pageable);
 
         } else if (emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
             entities = this.operationRepository
                     .findByCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            categoriesUuid, from, to, sort);
+                            categoriesUuid, from, to, Sort.by(orders), pageable);
 
         } else if (!emptyOrNull(accountsUuid) && emptyOrNull(categoriesUuid)) {
             entities = this.operationRepository
                     .findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            accountsUuid, from, to, sort);
+                            accountsUuid, from, to, Sort.by(orders), pageable);
 
         } else {
             entities = this.operationRepository
-                    .findByDateGreaterThanEqualAndDateLessThanEqual(from, to, sort);
+                    .findByDateGreaterThanEqualAndDateLessThanEqual(from, to, Sort.by(orders), pageable);
         }
 
-        List<Operation> operationList = entities.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Operation.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), operationList.size());
-        return new PageImpl<>(operationList.subList(start, end), pageable, operationList.size());
+                .collect(Collectors.toList()));
     }
 
     @Override

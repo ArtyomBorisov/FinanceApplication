@@ -97,39 +97,32 @@ public class AccountService implements IAccountService {
 
     @Override
     public Page<Account> get(Pageable pageable) {
-        List<AccountEntity> entities;
+        Page<AccountEntity> entities;
 
         try {
-            entities = this.accountRepository.findByOrderByDtCreateAsc();
+            entities = this.accountRepository.findByOrderByDtCreateAsc(pageable);
         } catch (Exception e) {
             throw new RuntimeException(Errors.SQL_ERROR.name(), e);
         }
 
-        List<Account> result = entities.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Account.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), result.size());
-        return new PageImpl<>(result.subList(start, end), pageable, result.size());
+                .collect(Collectors.toList()));
     }
 
     @Override
     public Page<Account> getInOrderByTitle(Collection<UUID> uuids, Pageable pageable) {
-        List<AccountEntity> entities;
+        Page<AccountEntity> entities;
+
         if (uuids == null || uuids.isEmpty()) {
-            entities = this.accountRepository.findByOrderByTitleAsc();
+            entities = this.accountRepository.findByOrderByTitleAsc(pageable);
         } else {
-            entities = this.accountRepository.findByIdInOrderByTitleAsc(uuids);
+            entities = this.accountRepository.findByIdInOrderByTitleAsc(uuids, pageable);
         }
 
-        List<Account> data = entities.stream()
+        return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Account.class))
-                .collect(Collectors.toList());
-
-        int start = (int)pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), data.size());
-        return new PageImpl<>(data.subList(start, end), pageable, data.size());
+                .collect(Collectors.toList()));
     }
 
     @Override

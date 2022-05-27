@@ -2,7 +2,6 @@ package by.itacademy.account.controller.web.controllers.rest;
 
 import by.itacademy.account.model.Account;
 import by.itacademy.account.service.api.IAccountService;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -19,12 +18,9 @@ import java.util.UUID;
 public class AccountController {
 
     private final IAccountService accountService;
-    private final ConversionService conversionService;
 
-    public AccountController(IAccountService accountService,
-                             ConversionService conversionService) {
+    public AccountController(IAccountService accountService) {
         this.accountService = accountService;
-        this.conversionService = conversionService;
     }
 
     @PostMapping

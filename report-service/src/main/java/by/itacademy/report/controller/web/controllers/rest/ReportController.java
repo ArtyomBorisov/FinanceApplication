@@ -47,7 +47,7 @@ public class ReportController {
     public ResponseEntity<ByteArrayResource> download(@PathVariable(name = "uuid") UUID id) {
         HttpHeaders header = new HttpHeaders();
         header.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + id + ".xlsx");
-        header.setContentType(new MediaType("application", "force-download"));
+//        header.setContentType(new MediaType("application", "force-download"));
 
         byte[] bytes = this.reportService.download(id).toByteArray();
         return new ResponseEntity<>(new ByteArrayResource(bytes), header, HttpStatus.OK);

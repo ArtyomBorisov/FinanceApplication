@@ -1,6 +1,8 @@
 package by.itacademy.account.repository.api;
 
 import by.itacademy.account.repository.entity.OperationEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,28 +14,32 @@ import java.util.UUID;
 
 @Repository
 public interface IOperationRepository extends JpaRepository<OperationEntity, UUID> {
-    List<OperationEntity> findByAccountEntity_IdOrderByDtCreateAsc(UUID idAccount);
+    Page<OperationEntity> findByAccountEntity_IdOrderByDtCreateAsc(UUID idAccount, Pageable pageable);
     Optional<OperationEntity> findByIdAndAccountEntity_Id(UUID idOperation, UUID idAccount);
 
 
-    List<OperationEntity> findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
+    Page<OperationEntity> findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
             List<UUID> accounts,
             List<UUID> categories,
             LocalDateTime from,
             LocalDateTime to,
-            Sort sort);
+            Sort sort,
+            Pageable pageable);
 
-    List<OperationEntity> findByCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(List<UUID> categories,
+    Page<OperationEntity> findByCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(List<UUID> categories,
                                                                                       LocalDateTime from,
                                                                                       LocalDateTime to,
-                                                                                      Sort sort);
+                                                                                      Sort sort,
+                                                                                      Pageable pageable);
 
-    List<OperationEntity> findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(List<UUID> accounts,
+    Page<OperationEntity> findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(List<UUID> accounts,
                                                                                               LocalDateTime from,
                                                                                               LocalDateTime to,
-                                                                                              Sort sort);
+                                                                                              Sort sort,
+                                                                                              Pageable pageable);
 
-    List<OperationEntity> findByDateGreaterThanEqualAndDateLessThanEqual(LocalDateTime from,
+    Page<OperationEntity> findByDateGreaterThanEqualAndDateLessThanEqual(LocalDateTime from,
                                                                          LocalDateTime to,
-                                                                         Sort sort);
+                                                                         Sort sort,
+                                                                         Pageable pageable);
 }

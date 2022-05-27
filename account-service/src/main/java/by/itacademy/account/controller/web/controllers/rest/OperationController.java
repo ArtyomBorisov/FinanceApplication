@@ -19,12 +19,9 @@ import java.util.UUID;
 public class OperationController {
 
     private final IOperationService operationService;
-    private final ConversionService conversionService;
 
-    public OperationController(IOperationService operationService,
-                               ConversionService conversionService) {
+    public OperationController(IOperationService operationService) {
         this.operationService = operationService;
-        this.conversionService = conversionService;
     }
 
     @PostMapping

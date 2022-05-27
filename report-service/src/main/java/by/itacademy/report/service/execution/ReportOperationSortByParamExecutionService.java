@@ -338,12 +338,12 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             Row row = sheet.createRow(++numberRow);
 
             Cell date = row.createCell(0);
-            date.setCellValue(this.longToLDT((Long) operation.get("date"))
+            date.setCellValue(this.longToLDT(((Number) operation.get("date")).longValue())
                     .toLocalDate().format(DateTimeFormatter.ofPattern(pattern)));
             date.setCellStyle(cellStyleSheet);
 
             Cell time = row.createCell(1);
-            time.setCellValue(this.longToLDT((Long) operation.get("date"))
+            time.setCellValue(this.longToLDT(((Number) operation.get("date")).longValue())
                     .toLocalTime()
                     .format(DateTimeFormatter.ofPattern("HH:mm:ss")));
             time.setCellStyle(cellStyleSheet);
