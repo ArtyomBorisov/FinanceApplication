@@ -12,6 +12,7 @@ public class ReportFileDtoToEntityConverter implements Converter<ReportFile, Rep
         return ReportFileEntity.Builder.createBuilder()
                 .setId(dto.getId())
                 .setData(dto.getData().toByteArray())
+                .setUser(dto.getUser())
                 .build();
     }
 }

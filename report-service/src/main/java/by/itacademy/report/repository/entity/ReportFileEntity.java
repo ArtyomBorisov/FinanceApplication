@@ -16,6 +16,9 @@ public class ReportFileEntity {
     @Column(name = "data")
     private byte[] data;
 
+    @Column(name = "\"user\"", nullable = false)
+    private String user;
+
     public UUID getId() {
         return id;
     }
@@ -32,6 +35,14 @@ public class ReportFileEntity {
         this.data = data;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public static class Builder {
         private ReportFileEntity entity;
 
@@ -46,6 +57,11 @@ public class ReportFileEntity {
 
         public Builder setData(byte[] data) {
             this.entity.data = data;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.entity.user = user;
             return this;
         }
 

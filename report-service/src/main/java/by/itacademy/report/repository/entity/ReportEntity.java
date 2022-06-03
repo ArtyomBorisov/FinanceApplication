@@ -34,6 +34,9 @@ public class ReportEntity {
     @Column(name = "params")
     private Map<String, Object> params;
 
+    @Column(name = "\"user\"", nullable = false)
+    private String user;
+
     public UUID getId() {
         return id;
     }
@@ -90,6 +93,14 @@ public class ReportEntity {
         this.params = params;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public static class Builder {
         private ReportEntity entity;
 
@@ -129,6 +140,11 @@ public class ReportEntity {
 
         public Builder setParams(Map<String, Object> params) {
             this.entity.params = params;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.entity.user = user;
             return this;
         }
 

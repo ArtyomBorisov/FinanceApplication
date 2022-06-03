@@ -12,7 +12,9 @@ import java.util.UUID;
 
 @Repository
 public interface ICategoryRepository extends JpaRepository<CategoryEntity, UUID> {
+    Optional<CategoryEntity> findById(UUID id);
     Optional<CategoryEntity> findByTitle(String title);
     Page<CategoryEntity> findByIdInOrderByTitle(Collection<UUID> collectionId, Pageable pageable);
     Page<CategoryEntity> findByOrderByTitle(Pageable pageable);
+    boolean existsCategoryEntityById(UUID id);
 }

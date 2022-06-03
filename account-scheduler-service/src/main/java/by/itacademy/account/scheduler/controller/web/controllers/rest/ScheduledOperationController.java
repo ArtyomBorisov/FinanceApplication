@@ -2,58 +2,45 @@ package by.itacademy.account.scheduler.controller.web.controllers.rest;
 
 import by.itacademy.account.scheduler.model.ScheduledOperation;
 import by.itacademy.account.scheduler.service.api.IScheduledOperationService;
-import by.itacademy.account.scheduler.service.api.ValidationException;
-import org.springframework.core.convert.ConversionService;
+import by.itacademy.account.scheduler.service.api.MessageError;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.Min;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(value = {"/scheduler/operation", "/scheduler/operation/"},
-        consumes = {MediaType.APPLICATION_JSON_VALUE},
-        produces = {MediaType.APPLICATION_JSON_VALUE})
+@RequestMapping(value = "/scheduler/operation")
 public class ScheduledOperationController {
 
     private final IScheduledOperationService scheduledOperationService;
-    private final ConversionService conversionService;
 
-    public ScheduledOperationController(IScheduledOperationService scheduledOperationService,
-                                        ConversionService conversionService) {
+    public ScheduledOperationController(IScheduledOperationService scheduledOperationService) {
         this.scheduledOperationService = scheduledOperationService;
-        this.conversionService = conversionService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody ScheduledOperation scheduledOperation) {
         this.scheduledOperationService.add(scheduledOperation);
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public Page<ScheduledOperation> index(@RequestParam int page,
-                                          @RequestParam int size) {
+    public Page<ScheduledOperation> index(@RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
+                                          @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         return this.scheduledOperationService.get(pageable);
     }
 
-    @PutMapping(value = {"{uuid}/dt_update/{dt_update}", "{uuid}/dt_update/{dt_update}/"})
+    @PutMapping(value = "{uuid}/dt_update/{dt_update}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public void update(@PathVariable(name = "uuid") UUID id,
-                       @PathVariable(name = "dt_update") String dtUpdateString,
+                       @PathVariable(name = "dt_update") LocalDateTime dtUpdate,
                        @RequestBody ScheduledOperation scheduledOperation) {
-        long dtUpdateLong;
-        try {
-            dtUpdateLong = Long.parseLong(dtUpdateString);
-        } catch (NumberFormatException e) {
-            throw new ValidationException("Передан неверный формат параметра последнего обновления");
-        }
-
-        LocalDateTime dtUpdate = this.conversionService.convert(dtUpdateLong, LocalDateTime.class);
         this.scheduledOperationService.update(scheduledOperation, id, dtUpdate);
     }
 

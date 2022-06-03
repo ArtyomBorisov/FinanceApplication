@@ -1,9 +1,9 @@
 spring:
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5433/account_service?ApplicationName=account_service
-    username: postgres
-    password: postgres
+    driver-class-name: "${spring.datasource.driver-class-name}"
+    url: "${spring.datasource.url}"
+    username: "${spring.datasource.username}"
+    password: "${spring.datasource.password}"
 
 classifier_currency_url : http://localhost:8081/backend/classifier/currency
 classifier_category_url : http://localhost:8081/backend/classifier/operation/category

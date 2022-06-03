@@ -12,7 +12,9 @@ import java.util.UUID;
 
 @Repository
 public interface ICurrencyRepository extends JpaRepository<CurrencyEntity, UUID> {
+    Optional<CurrencyEntity> findById(UUID id);
     Optional<CurrencyEntity> findByTitle(String title);
     Page<CurrencyEntity> findByIdInOrderByTitle(Collection<UUID> collectionId, Pageable pageable);
     Page<CurrencyEntity> findByOrderByTitle(Pageable pageable);
+    boolean existsCategoryEntityById(UUID id);
 }

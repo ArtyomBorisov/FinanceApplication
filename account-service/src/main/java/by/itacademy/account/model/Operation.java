@@ -2,7 +2,6 @@ package by.itacademy.account.model;
 
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeSerializer;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -113,8 +112,9 @@ public class Operation {
         return account;
     }
 
-    public void setAccount(Account account) {
+    public Operation setAccount(Account account) {
         this.account = account;
+        return this;
     }
 
     public static class Builder {

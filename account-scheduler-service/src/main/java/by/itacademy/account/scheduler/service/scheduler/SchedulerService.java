@@ -18,6 +18,8 @@ public class SchedulerService implements ISchedulerService {
     private final ConversionService conversionService;
     private final Scheduler scheduler;
 
+    private final String operations = "operations";
+
     public SchedulerService(ConversionService conversionService, Scheduler scheduler) {
         this.conversionService = conversionService;
         this.scheduler = scheduler;
@@ -26,7 +28,7 @@ public class SchedulerService implements ISchedulerService {
     @Override
     public void addScheduledOperation(Schedule schedule, UUID idScheduledOperation) {
         JobDetail job = JobBuilder.newJob(CreateOperationJob.class)
-                .withIdentity(idScheduledOperation.toString(), "operations")
+                .withIdentity(idScheduledOperation.toString(), this.operations)
                 .usingJobData("operation", idScheduledOperation.toString())
                 .build();
 
@@ -34,7 +36,7 @@ public class SchedulerService implements ISchedulerService {
         LocalDateTime startTime = schedule.getStartTime();
 
         TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
-                .withIdentity(idScheduledOperation.toString(), "operations");
+                .withIdentity(idScheduledOperation.toString(), this.operations);
 
         if (startTime == null) {
             builder.startNow();
@@ -105,10 +107,10 @@ public class SchedulerService implements ISchedulerService {
 
     @Override
     public void deleteScheduledOperation(UUID idScheduledOperation) {
-        TriggerKey triggerKey = new TriggerKey(idScheduledOperation.toString(), "operations");
+        TriggerKey triggerKey = new TriggerKey(idScheduledOperation.toString(), this.operations);
 
         try {
-            this.scheduler.deleteJob(new JobKey(idScheduledOperation.toString(), "operations"));
+            this.scheduler.deleteJob(new JobKey(idScheduledOperation.toString(), this.operations));
             this.scheduler.unscheduleJob(triggerKey);
         } catch (SchedulerException e) {
             throw new RuntimeException("Ошибка удаления запланированной операции", e);

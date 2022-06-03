@@ -1,7 +1,6 @@
 /.idea/
 */.idea/
-*/ddl/
-*/resources/
 */target/
 *.iml
 *.class
+*/application.properties

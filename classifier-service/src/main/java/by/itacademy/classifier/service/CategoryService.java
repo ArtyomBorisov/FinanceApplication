@@ -4,6 +4,8 @@ import by.itacademy.classifier.model.Category;
 import by.itacademy.classifier.repository.api.ICategoryRepository;
 import by.itacademy.classifier.repository.entity.CategoryEntity;
 import by.itacademy.classifier.service.api.IClassifierService;
+import by.itacademy.classifier.service.api.MessageError;
+import by.itacademy.classifier.service.api.ValidationError;
 import by.itacademy.classifier.service.api.ValidationException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
@@ -33,9 +35,12 @@ public class CategoryService implements IClassifierService<Category, UUID> {
     @Override
     public Category create(Category category) {
         if (category == null || category.getTitle() == null || category.getTitle().isEmpty()) {
-            throw new ValidationException("Не передано название категории");
+            throw new ValidationException(
+                    new ValidationError("title (название категории)", MessageError.MISSING_FIELD));
+
         } else if (this.categoryRepository.findByTitle(category.getTitle()).isPresent()) {
-            throw new ValidationException("Передано не уникальное название категории");
+            throw new ValidationException(
+                    new ValidationError("title (название категории)", MessageError.NO_UNIQUE_FIELD));
         }
 
         UUID id = UUID.randomUUID();
@@ -51,7 +56,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
             saveEntity = this.categoryRepository.save(
                     this.conversionService.convert(category, CategoryEntity.class));
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return this.conversionService.convert(saveEntity, Category.class);
@@ -64,12 +69,12 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         try {
             entities = this.categoryRepository.findByOrderByTitle(pageable);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Category.class))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Override
@@ -79,11 +84,11 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         try {
             entity = this.categoryRepository.findById(uuid).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         if (entity == null) {
-            throw new ValidationException("Категория с id " + uuid + " не найдена");
+            throw new ValidationException(MessageError.ID_NOT_EXIST);
         }
 
         return this.conversionService.convert(entity, Category.class);
@@ -96,11 +101,23 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         if (collectionId == null || collectionId.isEmpty()) {
             entities = this.categoryRepository.findByOrderByTitle(pageable);
         } else {
+            List<ValidationError> errors = new ArrayList<>();
+
+            for (UUID id : collectionId) {
+                if (!this.categoryRepository.existsCategoryEntityById(id)) {
+                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                throw new ValidationException(errors);
+            }
+
             entities = this.categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
 
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Category.class))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 }

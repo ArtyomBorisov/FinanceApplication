@@ -1,8 +1,11 @@
 package by.itacademy.report.service.execution;
 
-import by.itacademy.report.model.api.ParamSort;
+import by.itacademy.report.controller.web.controllers.utils.JwtTokenUtil;
+import by.itacademy.report.model.api.ReportType;
+import by.itacademy.report.service.UserHolder;
 import by.itacademy.report.service.api.IReportExecutionService;
-import by.itacademy.report.service.api.Errors;
+import by.itacademy.report.service.api.MessageError;
+import by.itacademy.report.service.api.ValidationError;
 import by.itacademy.report.service.api.ValidationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,13 +14,15 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayOutputStream;
@@ -31,14 +36,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Scope("prototype")
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Transactional(readOnly = true)
 public class ReportOperationSortByParamExecutionService implements IReportExecutionService {
 
-    private RestTemplate restTemplate;
-    private ObjectMapper mapper;
-    private Environment env;
-    private String operationBackendUrl;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper mapper;
+    private final UserHolder userHolder;
 
     @Value("${classifier_currency_backend_url}")
     private String currencyBackendUrl;
@@ -46,103 +50,100 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
     @Value("${classifier_category_backend_url}")
     private String categoryBackendUrl;
 
+    @Value("${operation_backend_url}")
+    private String operationBackendUrl;
+
     @Value("${account_backend_url}")
     private String accountBackendUrl;
+
+    @Value("${account_url}")
+    private String accountUrl;
 
     @Value("${font_name}")
     private String fontName;
 
+    @Value("${default_day_interval}")
+    private int defaultDayInterval;
+
     private final String sheetName = "ReportExpenseByDate";
 
     public ReportOperationSortByParamExecutionService(ObjectMapper mapper,
-                                                      Environment env) {
+                                                      UserHolder userHolder) {
         this.mapper = mapper;
-        this.env = env;
+        this.userHolder = userHolder;
         this.restTemplate = new RestTemplate();
     }
 
     @Transactional
     @Override
     public ByteArrayOutputStream execute(Map<String, Object> params) {
-        ParamSort sort = (ParamSort) params.get("type");
+        String typeParam = "type";
+        String accountsParam = "accounts";
+        String categoriesParam = "categories";
+        String fromParam = "from";
+        String toParam = "to";
 
-        switch (sort) {
-            case BY_DATE_AND_TIME:
-                this.operationBackendUrl = env.getProperty("operation_sorted_by_dt_backend_url");
-                break;
-            case BY_CATEGORY_NAME:
-                this.operationBackendUrl = env.getProperty("operation_sorted_by_category_backend_url");
-                break;
-            default:
-                throw new ValidationException("Нет реализации такого отчёта");
-        }
-
-        Object accountsObj = params.get("accounts");
-        Object categoriesObj = params.get("categories");
-        Object fromDateObj = params.get("from");
-        Object toDateObj = params.get("to");
+        Object accountsObj = params.get(accountsParam);
+        Object categoriesObj = params.get(categoriesParam);
+        Object fromDateObj = params.get(fromParam);
+        Object toDateObj = params.get(toParam);
 
         Set<UUID> accountsUuidSet = new HashSet<>();
         Set<UUID> categoriesUuidSet = new HashSet<>();
-
         LocalDateTime from = null;
         LocalDateTime to = null;
 
-        try {
-            if (accountsObj instanceof Collection) {
-                accountsUuidSet = ((Collection<?>) accountsObj).stream()
-                        .map(uuid -> UUID.fromString((String) uuid))
-                        .collect(Collectors.toSet());
-            } else if (accountsObj != null) {
-                throw new ValidationException(Errors.INCORRECT_DATA.name());
-            }
+        HttpHeaders headers = this.createHeaders();
+        List<ValidationError> errors = new ArrayList<>();
 
-            if (categoriesObj instanceof Collection) {
-                categoriesUuidSet = ((Collection<?>) categoriesObj).stream()
-                        .map(uuid -> UUID.fromString((String) uuid))
-                        .collect(Collectors.toSet());
-            } else if (categoriesObj != null) {
-                throw new ValidationException(Errors.INCORRECT_DATA.name());
-            }
+        try {
+            ReportType sort = ReportType.valueOf((String) params.get(typeParam));
         } catch (IllegalArgumentException e) {
-            throw new ValidationException(Errors.INCORRECT_DATA.name());
+            errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
         }
+
+        this.checkParamCollectionUuids(accountsObj, accountsParam, accountsUuidSet, this.accountUrl, errors);
+        this.checkParamCollectionUuids(categoriesObj, categoriesParam, categoriesUuidSet,
+                this.categoryBackendUrl, errors);
 
         if (fromDateObj instanceof Number) {
             LocalDate dt = LocalDate.ofEpochDay((int) fromDateObj);
             from = LocalDateTime.of(dt, LocalTime.MIN);
         } else if (fromDateObj != null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.name());
+            errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
         }
 
         if (toDateObj instanceof Number) {
             LocalDate dt = LocalDate.ofEpochDay((int) toDateObj);
             to = LocalDateTime.of(dt, LocalTime.MAX);
         } else if (toDateObj != null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.name());
+            errors.add(new ValidationError(toParam, MessageError.INVALID_FORMAT));
         }
 
         if (from != null && to == null) {
-            to = LocalDateTime.of(from.plusDays(90).toLocalDate(), LocalTime.MAX);
+            to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
         } else if (from == null && to != null) {
-            from = LocalDateTime.of(to.minusDays(90).toLocalDate(), LocalTime.MIN);
+            from = LocalDateTime.of(to.minusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MIN);
         } else if (from == null && to == null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.name());
+            errors.add(new ValidationError(fromParam + ", " + toParam,
+                    "Требуется передать как минимум один параметр из указанных"));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
         }
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(this.sheetName);
 
-        sheet.setColumnWidth(0, 15 * 256);
-        sheet.setColumnWidth(1, 15 * 256);
+        sheet.setColumnWidth(0, 12 * 256);
+        sheet.setColumnWidth(1, 12 * 256);
         sheet.setColumnWidth(2, 35 * 256);
         sheet.setColumnWidth(3, 15 * 256);
-        sheet.setColumnWidth(4, 30 * 256);
-        sheet.setColumnWidth(5, 15 * 256);
+        sheet.setColumnWidth(4, 60 * 256);
+        sheet.setColumnWidth(5, 10 * 256);
         sheet.setColumnWidth(6, 10 * 256);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(params, headers);
 
         List<Map<String, Object>> operationList = new ArrayList<>();
@@ -194,8 +195,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         boolean lastPage = false;
         int page = -1;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpHeaders headers = this.createHeaders();
 
         HttpEntity<Set<UUID>> request = new HttpEntity<>(uuids, headers);
 
@@ -217,6 +217,36 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         }
 
         return data;
+    }
+
+    private void checkParamCollectionUuids(Object obj,
+                                           String paramName,
+                                           Set<UUID> set,
+                                           String url,
+                                           List<ValidationError> errors) {
+        if (obj instanceof Collection) {
+            try {
+                set = ((Collection<?>) obj).stream()
+                        .map(uuid -> UUID.fromString((String) uuid))
+                        .collect(Collectors.toSet());
+            } catch (IllegalArgumentException e) {
+                errors.add(new ValidationError(paramName, MessageError.INVALID_FORMAT));
+            }
+
+            HttpHeaders headers = this.createHeaders();
+            HttpEntity<Object> entity = new HttpEntity(headers);
+
+            for (UUID id : set) {
+                try {
+                    String urlWithId = url + "/" + id;
+                    this.restTemplate.exchange(urlWithId, HttpMethod.GET, entity, String.class);
+                } catch (HttpStatusCodeException e) {
+                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+                }
+            }
+        } else if (obj != null) {
+            errors.add(new ValidationError(paramName, MessageError.INVALID_FORMAT));
+        }
     }
 
     private void fillHeader(XSSFWorkbook workbook) {
@@ -280,7 +310,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         title7.setCellStyle(cellStyleHeaderSheet);
 
         Cell headerCell = rowHeader.createCell(0);
-        headerCell.setCellValue("Отчёт по операциям расхода");
+        headerCell.setCellValue("Отчёт по операциям");
         headerCell.setCellStyle(cellStyleHeaderRow);
     }
 
@@ -317,6 +347,26 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         cellStyleSheet.setBorderTop(BorderStyle.MEDIUM);
         cellStyleSheet.setBorderRight(BorderStyle.MEDIUM);
         cellStyleSheet.setBorderLeft(BorderStyle.MEDIUM);
+
+        CellStyle cellStyleSheetRed = workbook.createCellStyle();
+        cellStyleSheetRed.setWrapText(true);
+        cellStyleSheetRed.setFont(fontSheet);
+        cellStyleSheetRed.setBorderBottom(BorderStyle.MEDIUM);
+        cellStyleSheetRed.setBorderTop(BorderStyle.MEDIUM);
+        cellStyleSheetRed.setBorderRight(BorderStyle.MEDIUM);
+        cellStyleSheetRed.setBorderLeft(BorderStyle.MEDIUM);
+        cellStyleSheetRed.setFillForegroundColor(IndexedColors.LAVENDER.getIndex());
+        cellStyleSheetRed.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        CellStyle cellStyleSheetGreen = workbook.createCellStyle();
+        cellStyleSheetGreen.setWrapText(true);
+        cellStyleSheetGreen.setFont(fontSheet);
+        cellStyleSheetGreen.setBorderBottom(BorderStyle.MEDIUM);
+        cellStyleSheetGreen.setBorderTop(BorderStyle.MEDIUM);
+        cellStyleSheetGreen.setBorderRight(BorderStyle.MEDIUM);
+        cellStyleSheetGreen.setBorderLeft(BorderStyle.MEDIUM);
+        cellStyleSheetGreen.setFillForegroundColor(IndexedColors.LIME.getIndex());
+        cellStyleSheetGreen.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
         Cell cellHeader = rowHeader1.createCell(0);
         cellHeader.setCellValue("Даты с " + from.format(DateTimeFormatter.ofPattern(pattern))
@@ -363,14 +413,12 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
 
             Cell value = row.createCell(5);
             double sum = (Double) operation.get("value");
-            if (sum < 0) {
-                cellStyleSheet.setFillForegroundColor(IndexedColors.RED.getIndex());
-            } else {
-                cellStyleSheet.setFillForegroundColor(IndexedColors.GREEN.getIndex());
-            }
             value.setCellValue(sum);
-            value.setCellStyle(cellStyleSheet);
-            cellStyleSheet.setFillForegroundColor(IndexedColors.AUTOMATIC.getIndex());
+            if (sum < 0) {
+                value.setCellStyle(cellStyleSheetRed);
+            } else {
+                value.setCellStyle(cellStyleSheetGreen);
+            }
 
             Cell currency = row.createCell(6);
             currency.setCellValue(currencyTitleMap.get(UUID.fromString((String) operation.get("currency"))));
@@ -380,6 +428,15 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
 
     private LocalDateTime longToLDT(Long num) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(num), TimeZone.getDefault().toZoneId());
+    }
+
+    private HttpHeaders createHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+
+        return headers;
     }
 }
 

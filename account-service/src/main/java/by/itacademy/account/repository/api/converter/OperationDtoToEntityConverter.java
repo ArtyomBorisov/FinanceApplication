@@ -7,13 +7,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OperationDtoToEntityConverter implements Converter<Operation, OperationEntity> {
-
-    private final AccountDtoToEntityConverter accountDtoToEntityConverter;
-
-    public OperationDtoToEntityConverter(AccountDtoToEntityConverter accountDtoToEntityConverter) {
-        this.accountDtoToEntityConverter = accountDtoToEntityConverter;
-    }
-
     @Override
     public OperationEntity convert(Operation dto) {
         return OperationEntity.Builder.createBuilder()
@@ -25,8 +18,7 @@ public class OperationDtoToEntityConverter implements Converter<Operation, Opera
                 .setCategory(dto.getCategory())
                 .setValue(dto.getValue())
                 .setCurrency(dto.getCurrency())
-                .setAccountEntity(dto.getAccount() == null ?
-                        null : this.accountDtoToEntityConverter.convert(dto.getAccount()))
+                .setAccountEntity(null)
                 .build();
     }
 }

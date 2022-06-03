@@ -1,5 +1,6 @@
 package by.itacademy.account.scheduler.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.UUID;
@@ -19,6 +20,9 @@ public class Operation {
 
     @JsonProperty("category")
     private UUID category;
+
+    @JsonIgnore
+    private String user;
 
     public UUID getAccount() {
         return account;
@@ -60,6 +64,14 @@ public class Operation {
         this.category = category;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public static class Builder {
         private Operation operation;
 
@@ -89,6 +101,11 @@ public class Operation {
 
         public Builder setCategory(UUID category) {
             this.operation.category = category;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.operation.user = user;
             return this;
         }
 

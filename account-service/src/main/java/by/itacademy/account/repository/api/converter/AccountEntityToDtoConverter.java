@@ -19,6 +19,7 @@ public class AccountEntityToDtoConverter implements Converter<AccountEntity, Acc
                 .setBalance(entity.getBalance() == null ? null : entity.getBalance().getSum())
                 .setType(Type.valueOf(entity.getType()))
                 .setCurrency(entity.getCurrency())
+                .setUser(entity.getUser())
                 .build();
     }
 }

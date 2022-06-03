@@ -4,6 +4,7 @@ import by.itacademy.classifier.model.Currency;
 import by.itacademy.classifier.repository.api.ICurrencyRepository;
 import by.itacademy.classifier.repository.entity.CurrencyEntity;
 import by.itacademy.classifier.service.api.IClassifierService;
+import by.itacademy.classifier.service.api.MessageError;
 import by.itacademy.classifier.service.api.ValidationError;
 import by.itacademy.classifier.service.api.ValidationException;
 import org.springframework.core.convert.ConversionService;
@@ -37,24 +38,23 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
     @Override
     public Currency create(Currency currency) {
         if (currency == null) {
-            throw new ValidationException("Не передан объект currency");
+            throw new ValidationException(new ValidationError("currency", MessageError.MISSING_OBJECT));
         }
 
         List<ValidationError> errors = new ArrayList<>();
 
         if (this.nullOrEmpty(currency.getTitle())) {
-            errors.add(new ValidationError("title", "Не передан код валюты (или передан пустой)"));
+            errors.add(new ValidationError("title (код валюты)", MessageError.MISSING_FIELD));
         } else if (this.currencyRepository.findByTitle(currency.getTitle()).isPresent()) {
-            errors.add(new ValidationError("title", "Передан не уникальный код валюты"));
+            errors.add(new ValidationError("title (код валюты)", MessageError.NO_UNIQUE_FIELD));
         }
 
         if (this.nullOrEmpty(currency.getDescription())) {
-            errors.add(new ValidationError("description",
-                    "Не передано описание валюты (или передано пустой)"));
+            errors.add(new ValidationError("description (описание валюты)", MessageError.MISSING_FIELD));
         }
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(errors);
         }
 
         UUID id = UUID.randomUUID();
@@ -70,7 +70,7 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
             saveEntity = this.currencyRepository.save(
                     this.conversionService.convert(currency, CurrencyEntity.class));
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return this.conversionService.convert(saveEntity, Currency.class);
@@ -81,14 +81,14 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         Page<CurrencyEntity> entities;
 
         try {
-            entities = this.currencyRepository.findAll(pageable);
+            entities = this.currencyRepository.findByOrderByTitle(pageable);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Currency.class))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Override
@@ -98,11 +98,11 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         try {
             entity = this.currencyRepository.findById(uuid).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         if (entity == null) {
-            throw new ValidationException("Валюта с id " + uuid + " не найдена");
+            throw new ValidationException(MessageError.ID_NOT_EXIST);
         }
 
         return this.conversionService.convert(entity, Currency.class);
@@ -115,12 +115,24 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         if (collectionId == null || collectionId.isEmpty()) {
             entities = this.currencyRepository.findAll(pageable);
         } else {
+            List<ValidationError> errors = new ArrayList<>();
+
+            for (UUID id : collectionId) {
+                if (!this.currencyRepository.existsCategoryEntityById(id)) {
+                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                throw new ValidationException(errors);
+            }
+
             entities = this.currencyRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
 
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Currency.class))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     private boolean nullOrEmpty(String str) {

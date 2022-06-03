@@ -14,6 +14,6 @@ public class ReportFileEntityToDtoConverter implements Converter<ReportFileEntit
         byte[] data = entity.getData();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
         outputStream.write(data, 0, data.length);
-        return new ReportFile(entity.getId(), outputStream);
+        return new ReportFile(entity.getId(), outputStream, entity.getUser());
     }
 }

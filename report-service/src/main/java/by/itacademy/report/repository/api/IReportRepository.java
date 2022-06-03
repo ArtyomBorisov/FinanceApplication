@@ -11,6 +11,6 @@ import java.util.UUID;
 
 @Repository
 public interface IReportRepository extends JpaRepository<ReportEntity, UUID> {
-    Page<ReportEntity> findByOrderByDtCreateAsc(Pageable pageable);
-    Optional<ReportEntity> findByIdAndStatus(UUID id, String status);
+    Page<ReportEntity> findByUserOrderByDtCreateAsc(String login, Pageable pageable);
+    Optional<ReportEntity> findByUserAndIdAndStatus(String login, UUID id, String status);
 }

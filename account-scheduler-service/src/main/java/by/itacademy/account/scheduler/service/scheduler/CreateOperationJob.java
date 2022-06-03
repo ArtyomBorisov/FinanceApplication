@@ -1,12 +1,17 @@
 package by.itacademy.account.scheduler.service.scheduler;
 
+import by.itacademy.account.scheduler.controller.web.controllers.utils.JwtTokenUtil;
 import by.itacademy.account.scheduler.model.Operation;
 import by.itacademy.account.scheduler.model.ScheduledOperation;
-import by.itacademy.account.scheduler.service.ScheduledOperationService;
+import by.itacademy.account.scheduler.repository.api.IScheduledOperationRepository;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -17,21 +22,45 @@ import java.util.UUID;
 @Transactional
 public class CreateOperationJob implements Job {
 
-    private final ScheduledOperationService scheduledOperationService;
-    private final RestTemplate restTemplate;
+    @Value("${account_backend_url}")
+    private String accountBackendUrl;
 
-    public CreateOperationJob(ScheduledOperationService scheduledOperationService) {
-        this.scheduledOperationService = scheduledOperationService;
+    private final IScheduledOperationRepository scheduledOperationRepository;
+    private final RestTemplate restTemplate;
+    private final ConversionService conversionService;
+
+    public CreateOperationJob(IScheduledOperationRepository scheduledOperationRepository,
+                              ConversionService conversionService) {
+        this.scheduledOperationRepository = scheduledOperationRepository;
+        this.conversionService = conversionService;
         this.restTemplate = new RestTemplate();
     }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         String idOperation = context.getMergedJobDataMap().getString("operation");
-        ScheduledOperation scheduledOperation = this.scheduledOperationService.get(UUID.fromString(idOperation));
+        ScheduledOperation scheduledOperation = this.conversionService.convert(
+                this.scheduledOperationRepository
+                        .getById(UUID.fromString(idOperation)),
+                ScheduledOperation.class);
 
-        String url = "http://localhost:8080/account/" + scheduledOperation.getOperation().getAccount() + "/operation/";
-        HttpEntity<Operation> request = new HttpEntity<>(scheduledOperation.getOperation());
+        Operation operation = scheduledOperation.getOperation();
+        String url = this.accountBackendUrl + "/" + operation.getAccount() + "/operation";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String token = JwtTokenUtil.generateAccessToken(operation.getUser());
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+
+        Operation operationForPost = Operation.Builder.createBuilder()
+                .setDescription(operation.getDescription())
+                .setCategory(operation.getCategory())
+                .setCurrency(operation.getCurrency())
+                .setValue(operation.getValue())
+                .build();
+
+        HttpEntity<Operation> request = new HttpEntity<>(operationForPost, headers);
+
         this.restTemplate.postForObject(url, request, String.class);
     }
 }

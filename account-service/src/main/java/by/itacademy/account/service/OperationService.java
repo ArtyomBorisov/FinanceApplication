@@ -1,16 +1,16 @@
 package by.itacademy.account.service;
 
+import by.itacademy.account.controller.web.controllers.utils.JwtTokenUtil;
+import by.itacademy.account.model.Account;
 import by.itacademy.account.model.Operation;
 import by.itacademy.account.repository.api.IOperationRepository;
 import by.itacademy.account.repository.api.ParamSort;
+import by.itacademy.account.repository.entity.AccountEntity;
 import by.itacademy.account.repository.entity.OperationEntity;
 import by.itacademy.account.service.api.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,13 +37,16 @@ public class OperationService implements IOperationService {
     private final IAccountService accountService;
     private final ConversionService conversionService;
     private final RestTemplate restTemplate;
+    private final UserHolder userHolder;
 
     public OperationService(IOperationRepository operationRepository,
                             IAccountService accountService,
-                            ConversionService conversionService) {
+                            ConversionService conversionService,
+                            UserHolder userHolder) {
         this.operationRepository = operationRepository;
         this.accountService = accountService;
         this.conversionService = conversionService;
+        this.userHolder = userHolder;
         this.restTemplate = new RestTemplate();
     }
 
@@ -56,7 +59,7 @@ public class OperationService implements IOperationService {
         this.checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException(Errors.INCORRECT_PARAMS, errors);
+            throw new ValidationException(errors);
         }
 
         if (operation.getDate() == null) {
@@ -66,19 +69,24 @@ public class OperationService implements IOperationService {
         UUID idOperation = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
 
+        Account account = this.accountService.get(idAccount);
+        AccountEntity accountEntity = this.conversionService.convert(account, AccountEntity.class);
+
         operation.setId(idOperation);
         operation.setDtCreate(now);
         operation.setDtUpdate(now);
-        operation.setAccount(this.accountService.get(idAccount));
+        operation.setAccount(account);
 
+        OperationEntity save;
         try {
-            this.operationRepository.save(
-                    this.conversionService.convert(operation, OperationEntity.class));
+            save = this.operationRepository.save(
+                    this.conversionService.convert(operation, OperationEntity.class).setAccountEntity(accountEntity)
+            );
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.name(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        return this.get(idAccount, idOperation);
+        return this.conversionService.convert(save, Operation.class).setAccount(account);
     }
 
     @Override
@@ -88,7 +96,7 @@ public class OperationService implements IOperationService {
         this.checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException(Errors.INCORRECT_PARAMS, errors);
+            throw new ValidationException(errors);
         }
 
         Page<OperationEntity> entities;
@@ -96,21 +104,31 @@ public class OperationService implements IOperationService {
         try {
             entities = this.operationRepository.findByAccountEntity_IdOrderByDtCreateAsc(idAccount, pageable);
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.name(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
+
+        Account account = this.accountService.get(idAccount);
 
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Operation.class))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Override
     public Page<Operation> getByParams(Map<String, Object> params, Pageable pageable) {
-        Object type = params.get("type");
-        Object accountsObj = params.get("accounts");
-        Object categoriesObj = params.get("categories");
-        Object fromDateObj = params.get("from");
-        Object toDateObj = params.get("to");
+        String login = this.userHolder.getLoginFromContext();
+
+        String typeParam = "type";
+        String accountsParam = "accounts";
+        String categoriesParam = "categories";
+        String fromParam = "from";
+        String toParam = "to";
+
+        Object type = params.get(typeParam);
+        Object accountsObj = params.get(accountsParam);
+        Object categoriesObj = params.get(categoriesParam);
+        Object fromDateObj = params.get(fromParam);
+        Object toDateObj = params.get(toParam);
 
         List<Sort.Order> orders = new ArrayList<>();
         List<UUID> accountsUuid = null;
@@ -118,56 +136,78 @@ public class OperationService implements IOperationService {
         LocalDateTime from = null;
         LocalDateTime to = null;
 
-        if (type instanceof String) {
-            ParamSort paramSort = ParamSort.valueOf((String) type);
+        List<ValidationError> errors = new ArrayList<>();
 
-            switch (paramSort) {
-                case BY_CATEGORY_NAME:
-                    orders.add(new Sort.Order(Sort.Direction.ASC, "category"));
-                    orders.add(new Sort.Order(Sort.Direction.ASC, "value"));
-                    break;
-                case BY_DATE_AND_TIME:
-                    orders.add(new Sort.Order(Sort.Direction.ASC, "date"));
-                    break;
-                default:
-                    throw new ValidationException(Errors.INCORRECT_DATA.toString());
+        if (type instanceof String) {
+            try {
+                ParamSort paramSort = ParamSort.valueOf((String) type);
+
+                switch (paramSort) {
+                    case BY_CATEGORY:
+                        orders.add(new Sort.Order(Sort.Direction.ASC, "category"));
+                        orders.add(new Sort.Order(Sort.Direction.ASC, "value"));
+                        break;
+                    case BY_DATE:
+                        orders.add(new Sort.Order(Sort.Direction.ASC, "date"));
+                        break;
+                    default:
+                        throw new RuntimeException("Нет реализации сортировки");
+                }
+            } catch (IllegalArgumentException e) {
+                errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
             }
+        } else if (type == null){
+            errors.add(new ValidationError(typeParam, MessageError.MISSING_FIELD));
         } else {
-            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
         }
+
+        Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by(orders));
 
         try {
             if (accountsObj instanceof Collection) {
                 accountsUuid = ((Collection<?>) accountsObj).stream()
                         .map(uuid -> UUID.fromString((String) uuid))
                         .collect(Collectors.toList());
+
+                for (UUID id : accountsUuid) {
+                    if (!this.accountService.isAccountExist(id)) {
+                        errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+                    }
+                }
             } else if (accountsObj != null) {
-                throw new ValidationException(Errors.INCORRECT_DATA.toString());
+                errors.add(new ValidationError(accountsParam, MessageError.INVALID_FORMAT));
             }
 
             if (categoriesObj instanceof Collection) {
                 categoriesUuid = ((Collection<?>) categoriesObj).stream()
                         .map(uuid -> UUID.fromString((String) uuid))
                         .collect(Collectors.toList());
+
+                HttpEntity<Object> entity = new HttpEntity<>(this.createHeaders());
+                for (UUID id : categoriesUuid) {
+                    this.checkCategoryId(id, entity, errors);
+                }
             } else if (categoriesObj != null) {
-                throw new ValidationException(Errors.INCORRECT_DATA.toString());
+                errors.add(new ValidationError(categoriesParam, MessageError.INVALID_FORMAT));
             }
         } catch (IllegalArgumentException e) {
-            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            errors.add(new ValidationError("uuid", MessageError.INVALID_FORMAT));
         }
 
         if (fromDateObj instanceof Number) {
             LocalDate dt = LocalDate.ofEpochDay((int) fromDateObj);
             from = LocalDateTime.of(dt, LocalTime.MIN);
         } else if (fromDateObj != null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
         }
 
         if (toDateObj instanceof Number) {
             LocalDate dt = LocalDate.ofEpochDay((int) toDateObj);
             to = LocalDateTime.of(dt, LocalTime.MAX);
         } else if (toDateObj != null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            errors.add(new ValidationError(toParam, MessageError.INVALID_FORMAT));
         }
 
         if (from != null && to == null) {
@@ -175,7 +215,12 @@ public class OperationService implements IOperationService {
         } else if (from == null && to != null) {
             from = LocalDateTime.of(to.minusDays(90).toLocalDate(), LocalTime.MIN);
         } else if (from == null && to == null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            errors.add(new ValidationError(fromParam, MessageError.MISSING_FIELD));
+            errors.add(new ValidationError(toParam, MessageError.MISSING_FIELD));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
         }
 
         Page<OperationEntity> entities;
@@ -183,26 +228,27 @@ public class OperationService implements IOperationService {
         if (!emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
              entities = this.operationRepository
                     .findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            accountsUuid, categoriesUuid, from, to, Sort.by(orders), pageable);
+                            accountsUuid, categoriesUuid, from, to, sorted);
 
         } else if (emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
             entities = this.operationRepository
-                    .findByCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            categoriesUuid, from, to, Sort.by(orders), pageable);
+                    .findByAccountEntity_UserAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
+                            login, categoriesUuid, from, to, sorted);
 
         } else if (!emptyOrNull(accountsUuid) && emptyOrNull(categoriesUuid)) {
             entities = this.operationRepository
                     .findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            accountsUuid, from, to, Sort.by(orders), pageable);
+                            accountsUuid, from, to, sorted);
 
         } else {
             entities = this.operationRepository
-                    .findByDateGreaterThanEqualAndDateLessThanEqual(from, to, Sort.by(orders), pageable);
+                    .findByAccountEntity_UserAndDateGreaterThanEqualAndDateLessThanEqual(login, from, to, sorted);
         }
 
         return new PageImpl<>(entities.stream()
-                .map(entity -> this.conversionService.convert(entity, Operation.class))
-                .collect(Collectors.toList()));
+                .map(operationEntity -> this.conversionService.convert(operationEntity, Operation.class)
+                        .setAccount(this.accountService.get(operationEntity.getAccountEntity().getId())))
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Override
@@ -213,20 +259,21 @@ public class OperationService implements IOperationService {
         this.checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException(Errors.INCORRECT_PARAMS.toString(), errors);
+            throw new ValidationException(errors);
         }
 
         try {
             entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         if (entity == null) {
-            throw new ValidationException(Errors.INCORRECT_DATA.toString());
+            throw new ValidationException(new ValidationError("id операции", MessageError.ID_NOT_EXIST));
         }
 
-        return this.conversionService.convert(entity, Operation.class);
+        return this.conversionService.convert(entity, Operation.class)
+                .setAccount(this.accountService.get(idAccount));
     }
 
     @Transactional
@@ -244,7 +291,7 @@ public class OperationService implements IOperationService {
         try {
             entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         if (entity != null) {
@@ -252,7 +299,7 @@ public class OperationService implements IOperationService {
         }
 
         if (!errors.isEmpty()) {
-            throw new ValidationException(Errors.INCORRECT_PARAMS.toString(), errors);
+            throw new ValidationException(errors);
         }
 
         if (operation.getDate() == null) {
@@ -270,10 +317,11 @@ public class OperationService implements IOperationService {
         try {
             save = this.operationRepository.save(entity);
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        return this.conversionService.convert(save, Operation.class);
+        return this.conversionService.convert(save, Operation.class)
+                .setAccount(this.accountService.get(idAccount));
     }
 
     @Transactional
@@ -289,7 +337,7 @@ public class OperationService implements IOperationService {
         try {
             entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         if (entity != null) {
@@ -297,49 +345,44 @@ public class OperationService implements IOperationService {
         }
 
         if (!errors.isEmpty()) {
-            throw new ValidationException(Errors.INCORRECT_PARAMS.toString(), errors);
+            throw new ValidationException(errors);
         }
 
         try {
             this.operationRepository.delete(entity);
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
     }
 
     private void checkOperation(Operation operation, List<ValidationError> errors) {
         if (operation == null) {
-            errors.add(new ValidationError("operation", "Не передан объект operation"));
+            errors.add(new ValidationError("operation", MessageError.MISSING_OBJECT));
             return;
         }
 
         String currencyClassifierUrl = this.currencyUrl + "/" + operation.getCurrency();
-        String categoryClassifierUrl = this.categoryUrl + "/" + operation.getCategory();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpHeaders headers = this.createHeaders();
         HttpEntity<Object> entity = new HttpEntity<>(headers);
 
         if (operation.getCategory() == null) {
-            errors.add(new ValidationError("category", "Не передана категория операции"));
+            errors.add(new ValidationError("category (категория)", MessageError.MISSING_FIELD));
         } else {
-            try {
-                this.restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
-            } catch (HttpStatusCodeException e) {
-                errors.add(new ValidationError("category", "Передан id категории, которой нет в справочнике"));
-            }
+            this.checkCategoryId(operation.getCategory(), entity, errors);
         }
 
         if (operation.getValue() == 0) {
-            errors.add(new ValidationError("value", "Передана нулевая сумма операции"));
+            errors.add(new ValidationError("value (сумма)", "Передана нулевая сумма операции"));
         }
 
         if (operation.getCurrency() == null) {
-            errors.add(new ValidationError("currency", "Не передана валюта операции"));
+            errors.add(new ValidationError("currency (валюта)", MessageError.MISSING_FIELD));
         } else {
             try {
                 this.restTemplate.exchange(currencyClassifierUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
-                errors.add(new ValidationError("currency", "Передан id валюты, которой нет в справочнике"));
+                errors.add(new ValidationError("id currency (id валюты)", MessageError.ID_NOT_EXIST));
             }
         }
     }
@@ -348,7 +391,7 @@ public class OperationService implements IOperationService {
                                   UUID idAccount,
                                   List<ValidationError> errors) {
         if (idOperation == null) {
-            errors.add(new ValidationError("idOperation", "Не передан id операции"));
+            errors.add(new ValidationError("id operation", MessageError.MISSING_FIELD));
             return;
         }
 
@@ -356,10 +399,10 @@ public class OperationService implements IOperationService {
             if (idAccount != null
                     && this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
 
-                errors.add(new ValidationError("idOperation", "Передан id не существующей операции"));
+                errors.add(new ValidationError("id operation", MessageError.ID_NOT_EXIST));
             }
         } catch (Exception e) {
-            throw new RuntimeException(Errors.SQL_ERROR.toString(), e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
     }
 
@@ -367,21 +410,41 @@ public class OperationService implements IOperationService {
                                OperationEntity entity,
                                List<ValidationError> errors) {
         if (dtUpdate == null) {
-            errors.add(new ValidationError("dtUpdate", " Не передан параметр последнего обновления"));
+            errors.add(new ValidationError("dtUpdate (параметр последнего обновления)", MessageError.MISSING_FIELD));
         } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
-            errors.add(new ValidationError("dtUpdate", "Передан неправильный параметр последнего обновления"));
+            errors.add(new ValidationError("dtUpdate", MessageError.INVALID_DT_UPDATE));
         }
     }
 
     private boolean checkIdAccount(UUID idAccount, List<ValidationError> errors) {
         if (idAccount == null) {
-            errors.add(new ValidationError("idAccount", "Не передан id аккаунта"));
+            errors.add(new ValidationError("id account (id счёта)", MessageError.MISSING_FIELD));
             return false;
         } else if (!this.accountService.isAccountExist(idAccount)) {
-            errors.add(new ValidationError("idAccount", "Передан id несуществующего аккаунта"));
+            errors.add(new ValidationError("id account (id счёта)", MessageError.ID_NOT_EXIST));
             return false;
         }
         return true;
+    }
+
+    private HttpHeaders createHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        return headers;
+    }
+
+    private boolean checkCategoryId(UUID id, HttpEntity<Object> entity, List<ValidationError> errors) {
+        String categoryClassifierUrl = this.categoryUrl + "/" + id;
+
+        try {
+            this.restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
+            return true;
+        } catch (HttpStatusCodeException e) {
+            errors.add(new ValidationError("id category (id категории)", MessageError.ID_NOT_EXIST));
+            return false;
+        }
     }
 
     private boolean emptyOrNull(List list) {

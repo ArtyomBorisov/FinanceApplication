@@ -1,9 +1,9 @@
 spring:
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5433/account_scheduler_service?ApplicationName=scheduler
-    username: postgres
-    password: postgres
+    driver-class-name: "${spring.datasource.driver-class-name}"
+    url: "${spring.datasource.url}"
+    username: "${spring.datasource.username}"
+    password: "${spring.datasource.password}"
   mvc:
     quartz:
       job-store-type: jdbc
@@ -14,6 +14,8 @@ spring:
         "org.quartz.jobStore.driverDelegateClass": "org.quartz.impl.jdbcjobstore.PostgreSQLDelegate"
         "org.quartz.jobStore.tablePrefix": "quartz.QRTZ_"
 
+account_url : http://localhost:8080/account
+account_backend_url : http://localhost:8080/backend/account
 classifier_currency_url : http://localhost:8081/backend/classifier/currency
 classifier_category_url : http://localhost:8081/backend/classifier/operation/category
 

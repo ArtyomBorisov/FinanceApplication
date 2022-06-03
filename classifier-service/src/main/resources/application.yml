@@ -1,8 +1,9 @@
 spring:
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5433/classifier_service?ApplicationName=classifier_service
-    username: postgres
-    password: postgres
+    driver-class-name: "${spring.datasource.driver-class-name}"
+    url: "${spring.datasource.url}"
+    username: "${spring.datasource.username}"
+    password: "${spring.datasource.password}"
+
 server:
   port : 8081

@@ -19,6 +19,7 @@ public class ReportEntityToDtoConverter implements Converter<ReportEntity, Repor
                 .setType(ReportType.valueOf(entity.getType()))
                 .setDescription(entity.getDescription())
                 .setParams(entity.getParams())
+                .setUser(entity.getUser())
                 .build();
     }
 }

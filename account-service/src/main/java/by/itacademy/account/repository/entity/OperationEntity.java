@@ -105,8 +105,9 @@ public class OperationEntity {
         return accountEntity;
     }
 
-    public void setAccountEntity(AccountEntity accountEntity) {
+    public OperationEntity setAccountEntity(AccountEntity accountEntity) {
         this.accountEntity = accountEntity;
+        return this;
     }
 
     public static class Builder {

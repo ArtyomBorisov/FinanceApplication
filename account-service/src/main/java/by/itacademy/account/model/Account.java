@@ -3,6 +3,7 @@ package by.itacademy.account.model;
 import by.itacademy.account.model.api.Type;
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -38,6 +39,9 @@ public class Account {
 
     @JsonProperty("currency")
     private UUID currency;
+
+    @JsonIgnore
+    private String user;
 
     public UUID getId() {
         return id;
@@ -103,6 +107,14 @@ public class Account {
         this.currency = currency;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public static class Builder {
         private Account account;
 
@@ -147,6 +159,11 @@ public class Account {
 
         public Builder setCurrency(UUID currency) {
             this.account.currency = currency;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.account.user = user;
             return this;
         }
 

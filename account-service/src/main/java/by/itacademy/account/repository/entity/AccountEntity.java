@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "account", schema = "app")
+@Table(name = "account", schema = "app", uniqueConstraints = @UniqueConstraint(columnNames = {"title", "user"}))
 public class AccountEntity {
     @Id
     @Column(name = "id")
@@ -18,7 +18,7 @@ public class AccountEntity {
     @Column(name = "dt_update", nullable = false)
     private LocalDateTime dtUpdate;
 
-    @Column(name = "title", nullable = false, unique = true)
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Column(name = "description")
@@ -33,6 +33,9 @@ public class AccountEntity {
 
     @Column(name = "currency", nullable = false)
     private UUID currency;
+
+    @Column(name = "\"user\"", nullable = false)
+    private String user;
 
     public UUID getId() {
         return id;
@@ -78,8 +81,9 @@ public class AccountEntity {
         return balance;
     }
 
-    public void setBalance(BalanceEntity balance) {
+    public AccountEntity setBalance(BalanceEntity balance) {
         this.balance = balance;
+        return this;
     }
 
     public String getType() {
@@ -96,6 +100,14 @@ public class AccountEntity {
 
     public void setCurrency(UUID currency) {
         this.currency = currency;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
     }
 
     public static class Builder {
@@ -142,6 +154,11 @@ public class AccountEntity {
 
         public Builder setCurrency(UUID currency) {
             this.entity.currency = currency;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.entity.user = user;
             return this;
         }
 

@@ -17,6 +17,7 @@ public class ReportDtoToEntityConverter implements Converter<Report, ReportEntit
                 .setType(dto.getType() == null ? null : dto.getType().toString())
                 .setDescription(dto.getDescription())
                 .setParams(dto.getParams())
+                .setUser(dto.getUser())
                 .build();
     }
 }

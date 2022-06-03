@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import javax.validation.ConstraintViolationException;
+
 @ControllerAdvice
 public class ExceptionAdvice {
     @ExceptionHandler(ValidationException.class)
@@ -18,8 +20,8 @@ public class ExceptionAdvice {
         }
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<?> argumentHandler(IllegalArgumentException e) {
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> invalidRequestParamsHandler(ConstraintViolationException e) {
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 }

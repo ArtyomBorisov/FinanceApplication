@@ -28,6 +28,7 @@ public class ScheduledOperationEntityToDtoConverter implements Converter<Schedul
                         .setValue(entity.getValue())
                         .setCurrency(entity.getCurrency())
                         .setCategory(entity.getCategory())
+                        .setUser(entity.getUser())
                         .build())
                 .build();
     }

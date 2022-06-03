@@ -4,6 +4,7 @@ import by.itacademy.report.model.api.ReportType;
 import by.itacademy.report.model.api.Status;
 import by.itacademy.report.model.api.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.report.model.api.serializer.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -37,6 +38,9 @@ public class Report {
 
     @JsonProperty("params")
     private Map<String, Object> params;
+
+    @JsonIgnore
+    private String user;
 
     public UUID getId() {
         return id;
@@ -94,6 +98,14 @@ public class Report {
         this.params = params;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public static class Builder {
         private Report report;
 
@@ -133,6 +145,11 @@ public class Report {
 
         public Builder setParams(Map<String, Object> params) {
             this.report.params = params;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.report.user = user;
             return this;
         }
 

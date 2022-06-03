@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import javax.validation.ConstraintViolationException;
+
 @ControllerAdvice
 public class ExceptionAdvice {
 
@@ -25,5 +27,10 @@ public class ExceptionAdvice {
         return new ResponseEntity<>(new SingleResponseError("error",
                 "Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз"),
                 HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> invalidRequestParamsHandler(ConstraintViolationException e) {
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 }

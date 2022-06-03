@@ -12,8 +12,9 @@ import java.util.UUID;
 
 @Repository
 public interface IAccountRepository extends JpaRepository<AccountEntity, UUID> {
-    Optional<AccountEntity> findByTitle(String title);
-    Page<AccountEntity> findByOrderByDtCreateAsc(Pageable pageable);
-    Page<AccountEntity> findByOrderByTitleAsc(Pageable pageable);
-    Page<AccountEntity> findByIdInOrderByTitleAsc(Collection<UUID> uuids, Pageable pageable);
+    Optional<AccountEntity> findByUserAndId(String login, UUID id);
+    Optional<AccountEntity> findByUserAndTitle(String login, String title);
+    Page<AccountEntity> findByUserOrderByBalance_SumDesc(String login, Pageable pageable);
+    Page<AccountEntity> findByUserAndIdInOrderByBalance_SumDesc(String login, Collection<UUID> uuids, Pageable pageable);
+    boolean existsAccountEntityByUserAndId(String login, UUID id);
 }

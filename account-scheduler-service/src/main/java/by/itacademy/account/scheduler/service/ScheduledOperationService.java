@@ -1,14 +1,12 @@
 package by.itacademy.account.scheduler.service;
 
+import by.itacademy.account.scheduler.controller.web.controllers.utils.JwtTokenUtil;
 import by.itacademy.account.scheduler.model.Operation;
 import by.itacademy.account.scheduler.model.Schedule;
 import by.itacademy.account.scheduler.model.ScheduledOperation;
 import by.itacademy.account.scheduler.repository.api.IScheduledOperationRepository;
 import by.itacademy.account.scheduler.repository.entity.ScheduledOperationEntity;
-import by.itacademy.account.scheduler.service.api.IScheduledOperationService;
-import by.itacademy.account.scheduler.service.api.ISchedulerService;
-import by.itacademy.account.scheduler.service.api.ValidationError;
-import by.itacademy.account.scheduler.service.api.ValidationException;
+import by.itacademy.account.scheduler.service.api.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
@@ -46,13 +44,16 @@ public class ScheduledOperationService implements IScheduledOperationService {
     private final ConversionService conversionService;
     private final RestTemplate restTemplate;
     private final ISchedulerService schedulerService;
+    private final UserHolder userHolder;
 
     public ScheduledOperationService(IScheduledOperationRepository scheduledOperationRepository,
                                      ConversionService conversionService,
-                                     ISchedulerService schedulerService) {
+                                     ISchedulerService schedulerService,
+                                     UserHolder userHolder) {
         this.scheduledOperationRepository = scheduledOperationRepository;
         this.conversionService = conversionService;
         this.schedulerService = schedulerService;
+        this.userHolder = userHolder;
         this.restTemplate = new RestTemplate();
     }
 
@@ -60,7 +61,7 @@ public class ScheduledOperationService implements IScheduledOperationService {
     @Override
     public ScheduledOperation add(ScheduledOperation scheduledOperation) {
         if (scheduledOperation == null) {
-            throw new ValidationException("Не передан объект scheduledOperation");
+            throw new ValidationException(new ValidationError("scheduledOperation", MessageError.MISSING_OBJECT));
         }
 
         List<ValidationError> errors = new ArrayList<>();
@@ -71,7 +72,7 @@ public class ScheduledOperationService implements IScheduledOperationService {
         this.checkSchedule(schedule, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(errors);
         }
 
         UUID id = UUID.randomUUID();
@@ -80,34 +81,38 @@ public class ScheduledOperationService implements IScheduledOperationService {
         scheduledOperation.setId(id);
         scheduledOperation.setDtCreate(now);
         scheduledOperation.setDtUpdate(now);
+        scheduledOperation.getOperation().setUser(this.userHolder.getLoginFromContext());
 
+        ScheduledOperationEntity save;
         try {
-            this.scheduledOperationRepository.save(
+            save = this.scheduledOperationRepository.save(
                     this.conversionService.convert(scheduledOperation, ScheduledOperationEntity.class));
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         this.schedulerService.addScheduledOperation(schedule, id);
 
-        return this.get(id);
+        return this.conversionService.convert(save, ScheduledOperation.class);
     }
 
     @Override
     public ScheduledOperation get(UUID id) {
+        String login = this.userHolder.getLoginFromContext();
+
         List<ValidationError> errors = new ArrayList<>();
         ScheduledOperationEntity entity;
 
         this.checkIdScheduledOperation(id, errors);
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(errors);
         }
 
         try {
-            entity = this.scheduledOperationRepository.findById(id).get();
+            entity = this.scheduledOperationRepository.findByUserAndId(login, id).get();
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return this.conversionService.convert(entity, ScheduledOperation.class);
@@ -115,24 +120,28 @@ public class ScheduledOperationService implements IScheduledOperationService {
 
     @Override
     public Page<ScheduledOperation> get(Pageable pageable) {
+        String login = this.userHolder.getLoginFromContext();
+
         Page<ScheduledOperationEntity> entities;
 
         try {
-            entities = this.scheduledOperationRepository.findByOrderByDtCreateAsc(pageable);
+            entities = this.scheduledOperationRepository.findByUserOrderByDtCreateAsc(login, pageable);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, ScheduledOperation.class))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Transactional
     @Override
     public ScheduledOperation update(ScheduledOperation scheduledOperation, UUID id, LocalDateTime dtUpdate) {
+        String login = this.userHolder.getLoginFromContext();
+
         if (scheduledOperation == null) {
-            throw new ValidationException("Не передан объект scheduledOperation");
+            throw new ValidationException(new ValidationError("scheduledOperation", MessageError.MISSING_OBJECT));
         }
 
         List<ValidationError> errors = new ArrayList<>();
@@ -146,22 +155,20 @@ public class ScheduledOperationService implements IScheduledOperationService {
 
         if (id != null){
             try {
-                entity = this.scheduledOperationRepository.findById(id).orElse(null);
+                entity = this.scheduledOperationRepository.findByUserAndId(login, id).orElse(null);
             } catch (Exception e) {
-                throw new RuntimeException("Ошибка выполнения SQL", e);
+                throw new RuntimeException(MessageError.SQL_ERROR, e);
             }
         }
 
         if (dtUpdate == null) {
-            errors.add(new ValidationError("dtUpdate",
-                    "Не передан параметр параметр последнего обновления"));
+            errors.add(new ValidationError("dtUpdate", MessageError.MISSING_FIELD));
         } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
-            errors.add(new ValidationError("dtUpdate",
-                    "Передан неверный параметр параметр последнего обновления"));
+            errors.add(new ValidationError("dtUpdate", MessageError.INVALID_DT_UPDATE));
         }
 
         if (!errors.isEmpty()) {
-            throw new ValidationException("Переданы некорректные параметры", errors);
+            throw new ValidationException(errors);
         }
 
         entity.setStartTime(schedule.getStartTime());
@@ -174,43 +181,44 @@ public class ScheduledOperationService implements IScheduledOperationService {
         entity.setCurrency(operation.getCurrency());
         entity.setCategory(operation.getCategory());
 
+        ScheduledOperationEntity save;
         try {
-            this.scheduledOperationRepository.save(entity);
+            save = this.scheduledOperationRepository.save(entity);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         this.schedulerService.deleteScheduledOperation(id);
         this.schedulerService.addScheduledOperation(schedule, id);
 
-        return this.get(id);
+        return this.conversionService.convert(save, ScheduledOperation.class);
     }
 
     private void checkIdScheduledOperation(UUID idScheduledOperation, List<ValidationError> errors) {
         if (idScheduledOperation == null) {
-            errors.add(new ValidationError("idScheduledOperation", "Не передан id операции"));
+            errors.add(new ValidationError("idScheduledOperation", MessageError.MISSING_FIELD));
             return;
         }
 
         try {
-            if (this.scheduledOperationRepository.findById(idScheduledOperation).isEmpty()) {
-                errors.add(new ValidationError("idScheduledOperation", "Передан id несуществующей операции"));
+            if (!this.scheduledOperationRepository.existsById(idScheduledOperation)) {
+                errors.add(new ValidationError("idScheduledOperation", MessageError.ID_NOT_EXIST));
             }
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка выполнения SQL", e);
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
     }
 
     private void checkSchedule(Schedule schedule, List<ValidationError> errors) {
         if (schedule == null) {
-            errors.add(new ValidationError("schedule", "Не передан объект schedule"));
+            errors.add(new ValidationError("schedule", MessageError.MISSING_OBJECT));
             return;
         }
 
         if (schedule.getInterval() < 0) {
             errors.add(new ValidationError("interval", "Интервал должен быть положительным"));
         } else if (schedule.getInterval() > 0 && schedule.getTimeUnit() == null) {
-            errors.add(new ValidationError("timeUnit", "Не передан timeUnit"));
+            errors.add(new ValidationError("timeUnit", MessageError.MISSING_OBJECT));
         }
 
         if (schedule.getStopTime() != null
@@ -223,9 +231,13 @@ public class ScheduledOperationService implements IScheduledOperationService {
 
     private void checkOperation(Operation operation, List<ValidationError> errors) {
         if (operation == null) {
-            errors.add(new ValidationError("operation", "Не передан объект operation"));
+            errors.add(new ValidationError("operation", MessageError.MISSING_OBJECT));
             return;
         }
+
+        String idAccount = "account (id счёта)";
+        String idCategory = "category (id категории)";
+        String idCurrency = "currency (id валюты)";
 
         String currencyClassifierUrl = this.currencyUrl + "/" + operation.getCurrency();
         String categoryClassifierUrl = this.categoryUrl + "/" + operation.getCategory();
@@ -234,24 +246,26 @@ public class ScheduledOperationService implements IScheduledOperationService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(headers);
+        String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
 
         if (operation.getAccount() == null) {
-            errors.add(new ValidationError("account", "Не передан счёт (id счёта)"));
+            errors.add(new ValidationError(idAccount, MessageError.MISSING_FIELD));
         } else {
             try {
                 this.restTemplate.exchange(accountServiceUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
-                errors.add(new ValidationError("account", "Передан id несуществующего счёта"));
+                errors.add(new ValidationError(idAccount, MessageError.ID_NOT_EXIST));
             }
         }
 
         if (operation.getCategory() == null) {
-            errors.add(new ValidationError("category", "Не передана категория операции"));
+            errors.add(new ValidationError(idCategory, MessageError.MISSING_FIELD));
         } else {
             try {
                 this.restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
-                errors.add(new ValidationError("category", "Передан id категории, которой нет в справочнике"));
+                errors.add(new ValidationError(idCategory, MessageError.ID_NOT_EXIST));
             }
         }
 
@@ -260,12 +274,12 @@ public class ScheduledOperationService implements IScheduledOperationService {
         }
 
         if (operation.getCurrency() == null) {
-            errors.add(new ValidationError("currency", "Не передана валюта операции"));
+            errors.add(new ValidationError(idCurrency, MessageError.MISSING_FIELD));
         } else {
             try {
                 this.restTemplate.exchange(currencyClassifierUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
-                errors.add(new ValidationError("currency", "Передан id валюты, которой нет в справочнике"));
+                errors.add(new ValidationError(idCurrency, MessageError.ID_NOT_EXIST));
             }
         }
     }

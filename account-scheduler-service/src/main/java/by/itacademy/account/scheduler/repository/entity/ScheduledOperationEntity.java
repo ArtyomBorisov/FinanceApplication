@@ -45,6 +45,9 @@ public class ScheduledOperationEntity {
     @Column(name = "category")
     private UUID category;
 
+    @Column(name = "\"user\"")
+    private String user;
+
     public UUID getId() {
         return id;
     }
@@ -141,6 +144,14 @@ public class ScheduledOperationEntity {
         this.category = category;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public static class Builder {
         private ScheduledOperationEntity scheduledOperationEntity;
 
@@ -205,6 +216,11 @@ public class ScheduledOperationEntity {
 
         public Builder setCategory(UUID category) {
             this.scheduledOperationEntity.category = category;
+            return this;
+        }
+
+        public Builder setUser(String user) {
+            this.scheduledOperationEntity.user = user;
             return this;
         }
 

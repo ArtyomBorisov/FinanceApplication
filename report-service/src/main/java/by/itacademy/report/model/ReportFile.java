@@ -6,10 +6,12 @@ import java.util.UUID;
 public class ReportFile {
     private UUID id;
     private ByteArrayOutputStream data;
+    private String user;
 
-    public ReportFile(UUID id, ByteArrayOutputStream data) {
+    public ReportFile(UUID id, ByteArrayOutputStream data, String user) {
         this.id = id;
         this.data = data;
+        this.user = user;
     }
 
     public UUID getId() {
@@ -18,5 +20,9 @@ public class ReportFile {
 
     public ByteArrayOutputStream getData() {
         return data;
+    }
+
+    public String getUser() {
+        return user;
     }
 }
