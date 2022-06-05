@@ -1,0 +1,11 @@
+spring:
+  mail:
+    host : smtp.mail.ru
+    port : 465
+    username : "${email.login}"
+    password : "${email.password}"
+    protocol : smtps
+    from : "${email.login}"
+    auth : true
+
+report_service_url : http://report-service:8080/report/uuid/export

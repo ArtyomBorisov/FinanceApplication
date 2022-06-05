@@ -58,6 +58,10 @@ services:
       - finance_ntwrk
     depends_on:
       - db
+  mail-service:
+    build: mail-service
+    networks:
+      - finance_ntwrk
   proxy:
     build: proxy
     ports:
@@ -72,6 +76,7 @@ services:
       - report-service
       - swagger-ui
       - pgadmin
+      - mail-service
 networks:
     finance_ntwrk:
       name: finance_ntwrk
