@@ -2,7 +2,6 @@ package by.itacademy.mail.service;
 
 import by.itacademy.mail.controller.utils.JwtTokenUtil;
 import by.itacademy.mail.service.api.IMailService;
-import com.sun.mail.smtp.SMTPAddressFailedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -17,7 +16,6 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.mail.MessagingException;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 import java.util.UUID;
 
