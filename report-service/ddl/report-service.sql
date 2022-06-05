@@ -1,12 +1,12 @@
-CREATE USER "${account.service.user}" WITH PASSWORD '${account.service.password}';
-CREATE DATABASE "report-service" WITH OWNER = "${account.service.user}";
-\c "report-service"
+CREATE USER "report-service_user" WITH PASSWORD 'CLlOg42MYtKt';
+CREATE DATABASE "report_service" WITH OWNER = "report-service_user";
+\c "report_service"
 
 SET client_encoding = 'UTF8';
 
 CREATE SCHEMA app;
 
-ALTER SCHEMA app OWNER TO "${account.service.user}";
+ALTER SCHEMA app OWNER TO "report-service_user";
 
 SET default_tablespace = '';
 
@@ -21,7 +21,7 @@ CREATE TABLE app.report (
     "user" character varying NOT NULL
 );
 
-ALTER TABLE app.report OWNER TO "${account.service.user}";
+ALTER TABLE app.report OWNER TO "report-service_user";
 
 CREATE TABLE app.report_file (
     id uuid NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE app.report_file (
     "user" character varying NOT NULL
 );
 
-ALTER TABLE app.report_file OWNER TO "${account.service.user}";
+ALTER TABLE app.report_file OWNER TO "report-service_user";
 
 ALTER TABLE ONLY app.report_file
     ADD CONSTRAINT report_file_pk PRIMARY KEY (id);

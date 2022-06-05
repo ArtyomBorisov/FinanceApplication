@@ -76,7 +76,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
 
     @Transactional
     @Override
-    public ByteArrayOutputStream execute(Map<String, Object> params) {
+    public ByteArrayOutputStream execute(Map<String, Object> params) throws Exception {
         String typeParam = "type";
         String accountsParam = "accounts";
         String categoriesParam = "categories";
@@ -88,12 +88,6 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         Object fromDateObj = params.get(fromParam);
         Object toDateObj = params.get(toParam);
 
-        Set<UUID> accountsUuidSet = new HashSet<>();
-        Set<UUID> categoriesUuidSet = new HashSet<>();
-        LocalDateTime from = null;
-        LocalDateTime to = null;
-
-        HttpHeaders headers = this.createHeaders();
         List<ValidationError> errors = new ArrayList<>();
 
         try {
@@ -102,23 +96,12 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
         }
 
-        this.checkParamCollectionUuids(accountsObj, accountsParam, accountsUuidSet, this.accountUrl, errors);
-        this.checkParamCollectionUuids(categoriesObj, categoriesParam, categoriesUuidSet,
-                this.categoryBackendUrl, errors);
+        Set<UUID> accountsUuidSet = this.checkParamCollectionUuids(accountsObj, accountsParam, this.accountUrl, errors);
+        Set<UUID> categoriesUuidSet = this.checkParamCollectionUuids(
+                categoriesObj, categoriesParam, this.categoryBackendUrl, errors);
 
-        if (fromDateObj instanceof Number) {
-            LocalDate dt = LocalDate.ofEpochDay((int) fromDateObj);
-            from = LocalDateTime.of(dt, LocalTime.MIN);
-        } else if (fromDateObj != null) {
-            errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
-        }
-
-        if (toDateObj instanceof Number) {
-            LocalDate dt = LocalDate.ofEpochDay((int) toDateObj);
-            to = LocalDateTime.of(dt, LocalTime.MAX);
-        } else if (toDateObj != null) {
-            errors.add(new ValidationError(toParam, MessageError.INVALID_FORMAT));
-        }
+        LocalDateTime from = this.checkParamDate(fromDateObj, LocalTime.MIN, fromParam, errors);
+        LocalDateTime to = this.checkParamDate(toDateObj, LocalTime.MAX, toParam, errors);
 
         if (from != null && to == null) {
             to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
@@ -144,8 +127,8 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         sheet.setColumnWidth(5, 10 * 256);
         sheet.setColumnWidth(6, 10 * 256);
 
+        HttpHeaders headers = this.createHeaders();
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(params, headers);
-
         List<Map<String, Object>> operationList = new ArrayList<>();
 
         try {
@@ -186,7 +169,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             return outputStream;
 
         } catch (IOException e) {
-            throw new RuntimeException("Проблемы с созданием отчёта", e);
+            throw new RuntimeException(MessageError.REPORT_ERROR, e);
         }
     }
 
@@ -219,11 +202,12 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         return data;
     }
 
-    private void checkParamCollectionUuids(Object obj,
-                                           String paramName,
-                                           Set<UUID> set,
-                                           String url,
-                                           List<ValidationError> errors) {
+    private Set<UUID> checkParamCollectionUuids(Object obj,
+                                                String paramName,
+                                                String url,
+                                                List<ValidationError> errors) {
+        Set<UUID> set = new HashSet<>();
+
         if (obj instanceof Collection) {
             try {
                 set = ((Collection<?>) obj).stream()
@@ -247,6 +231,21 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         } else if (obj != null) {
             errors.add(new ValidationError(paramName, MessageError.INVALID_FORMAT));
         }
+
+        return set;
+    }
+
+    private LocalDateTime checkParamDate(Object obj, LocalTime time, String paramName, List<ValidationError> errors) {
+        LocalDateTime ldt = null;
+
+        if (obj instanceof Number) {
+            LocalDate dt = LocalDate.ofEpochDay((int) obj);
+            ldt = LocalDateTime.of(dt, time);
+        } else if (obj != null) {
+            errors.add(new ValidationError(paramName, MessageError.INVALID_FORMAT));
+        }
+
+        return ldt;
     }
 
     private void fillHeader(XSSFWorkbook workbook) {
@@ -256,62 +255,27 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
 
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
 
-        XSSFFont fontHeaderRow = workbook.createFont();
-        fontHeaderRow.setFontName(this.fontName);
-        fontHeaderRow.setFontHeightInPoints((short) 14);
-        fontHeaderRow.setItalic(true);
+        XSSFFont fontHeaderRow = this.createFont(workbook, this.fontName, (short) 14, true, false);
+        XSSFFont fontHeaderSheet = this.createFont(workbook, this.fontName, (short) 12, false, true);
 
-        XSSFFont fontHeaderSheet = workbook.createFont();
-        fontHeaderSheet.setFontName(this.fontName);
-        fontHeaderSheet.setFontHeightInPoints((short) 12);
-        fontHeaderSheet.setBold(true);
-
-        CellStyle cellStyleHeaderRow = workbook.createCellStyle();
-        cellStyleHeaderRow.setWrapText(true);
+        CellStyle cellStyleHeaderRow = this.createCellStyle(workbook, fontHeaderRow, true, false);
         cellStyleHeaderRow.setAlignment(HorizontalAlignment.CENTER);
-        cellStyleHeaderRow.setFont(fontHeaderRow);
 
-        CellStyle cellStyleHeaderSheet = workbook.createCellStyle();
-        cellStyleHeaderSheet.setWrapText(true);
-        cellStyleHeaderSheet.setFont(fontHeaderSheet);
-        cellStyleHeaderSheet.setBorderBottom(BorderStyle.MEDIUM);
-        cellStyleHeaderSheet.setBorderTop(BorderStyle.MEDIUM);
-        cellStyleHeaderSheet.setBorderRight(BorderStyle.MEDIUM);
-        cellStyleHeaderSheet.setBorderLeft(BorderStyle.MEDIUM);
+        CellStyle cellStyleHeaderSheet = this.createCellStyle(workbook, fontHeaderSheet, true, true);
 
         Row rowTitles = sheet.createRow(4);
 
-        Cell title1 = rowTitles.createCell(0);
-        title1.setCellValue("Дата");
-        title1.setCellStyle(cellStyleHeaderSheet);
+        int numberCell = -1;
 
-        Cell title2 = rowTitles.createCell(1);
-        title2.setCellValue("Время");
-        title2.setCellStyle(cellStyleHeaderSheet);
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Дата");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Время");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Счёт");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Категория");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Описание операции");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Сумма");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Валюта");
 
-        Cell title3 = rowTitles.createCell(2);
-        title3.setCellValue("Счёт");
-        title3.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title4 = rowTitles.createCell(3);
-        title4.setCellValue("Категория");
-        title4.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title5 = rowTitles.createCell(4);
-        title5.setCellValue("Описание операции");
-        title5.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title6 = rowTitles.createCell(5);
-        title6.setCellValue("Сумма");
-        title6.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title7 = rowTitles.createCell(6);
-        title7.setCellValue("Валюта");
-        title7.setCellStyle(cellStyleHeaderSheet);
-
-        Cell headerCell = rowHeader.createCell(0);
-        headerCell.setCellValue("Отчёт по операциям");
-        headerCell.setCellStyle(cellStyleHeaderRow);
+        this.createCell(rowHeader, 0, cellStyleHeaderRow, "Отчёт по операциям");
     }
 
     private void fillSheet(XSSFWorkbook workbook,
@@ -332,86 +296,56 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 6));
         sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 6));
 
-        XSSFFont fontSheet = workbook.createFont();
-        fontSheet.setFontName(this.fontName);
-        fontSheet.setFontHeightInPoints((short) 11);
+        XSSFFont fontSheet = this.createFont(workbook, this.fontName, (short) 11, false, false);
 
-        CellStyle cellStyleRows = workbook.createCellStyle();
-        cellStyleRows.setWrapText(true);
-        cellStyleRows.setFont(fontSheet);
+        CellStyle cellStyleRows = this.createCellStyle(workbook, fontSheet, true, false);
+        CellStyle cellStyleSheet = this.createCellStyle(workbook, fontSheet, true, true);
 
-        CellStyle cellStyleSheet = workbook.createCellStyle();
-        cellStyleSheet.setWrapText(true);
-        cellStyleSheet.setFont(fontSheet);
-        cellStyleSheet.setBorderBottom(BorderStyle.MEDIUM);
-        cellStyleSheet.setBorderTop(BorderStyle.MEDIUM);
-        cellStyleSheet.setBorderRight(BorderStyle.MEDIUM);
-        cellStyleSheet.setBorderLeft(BorderStyle.MEDIUM);
-
-        CellStyle cellStyleSheetRed = workbook.createCellStyle();
-        cellStyleSheetRed.setWrapText(true);
-        cellStyleSheetRed.setFont(fontSheet);
-        cellStyleSheetRed.setBorderBottom(BorderStyle.MEDIUM);
-        cellStyleSheetRed.setBorderTop(BorderStyle.MEDIUM);
-        cellStyleSheetRed.setBorderRight(BorderStyle.MEDIUM);
-        cellStyleSheetRed.setBorderLeft(BorderStyle.MEDIUM);
+        CellStyle cellStyleSheetRed = this.createCellStyle(workbook, fontSheet, true, true);
         cellStyleSheetRed.setFillForegroundColor(IndexedColors.LAVENDER.getIndex());
         cellStyleSheetRed.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        CellStyle cellStyleSheetGreen = workbook.createCellStyle();
-        cellStyleSheetGreen.setWrapText(true);
-        cellStyleSheetGreen.setFont(fontSheet);
-        cellStyleSheetGreen.setBorderBottom(BorderStyle.MEDIUM);
-        cellStyleSheetGreen.setBorderTop(BorderStyle.MEDIUM);
-        cellStyleSheetGreen.setBorderRight(BorderStyle.MEDIUM);
-        cellStyleSheetGreen.setBorderLeft(BorderStyle.MEDIUM);
+        CellStyle cellStyleSheetGreen = this.createCellStyle(workbook, fontSheet, true, true);
         cellStyleSheetGreen.setFillForegroundColor(IndexedColors.LIME.getIndex());
         cellStyleSheetGreen.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        Cell cellHeader = rowHeader1.createCell(0);
-        cellHeader.setCellValue("Даты с " + from.format(DateTimeFormatter.ofPattern(pattern))
-                + " по " + to.format(DateTimeFormatter.ofPattern(pattern)));
-        cellHeader.setCellStyle(cellStyleRows);
+        this.createCell(rowHeader1, 0, cellStyleRows,
+                "Даты с " + from.format(DateTimeFormatter.ofPattern(pattern))
+                        + " по " + to.format(DateTimeFormatter.ofPattern(pattern)));
 
-        cellHeader = rowHeader2.createCell(0);
         String temp = accountTitleMap.values().toString();
-        cellHeader.setCellValue("Счета: " + temp.substring(1, temp.length() - 1));
-        cellHeader.setCellStyle(cellStyleRows);
+        this.createCell(rowHeader2, 0, cellStyleRows,
+                "Счета: " + temp.substring(1, temp.length() - 1));
 
-        cellHeader = rowHeader3.createCell(0);
         temp = categoryTitleMap.values().toString();
-        cellHeader.setCellValue("Категории: " + temp.substring(1, temp.length() - 1));
-        cellHeader.setCellStyle(cellStyleRows);
+        this.createCell(rowHeader3, 0, cellStyleRows,
+                "Категории: " + temp.substring(1, temp.length() - 1));
 
         int numberRow = sheet.getLastRowNum();
         for (Map<String, Object> operation : operations) {
             Row row = sheet.createRow(++numberRow);
 
-            Cell date = row.createCell(0);
-            date.setCellValue(this.longToLDT(((Number) operation.get("date")).longValue())
-                    .toLocalDate().format(DateTimeFormatter.ofPattern(pattern)));
-            date.setCellStyle(cellStyleSheet);
+            int numberCell = -1;
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    this.longToLDT(((Number) operation.get("date")).longValue())
+                            .toLocalDate().format(DateTimeFormatter.ofPattern(pattern)));
 
-            Cell time = row.createCell(1);
-            time.setCellValue(this.longToLDT(((Number) operation.get("date")).longValue())
-                    .toLocalTime()
-                    .format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            time.setCellStyle(cellStyleSheet);
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    this.longToLDT(((Number) operation.get("date")).longValue())
+                            .toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+
 
             Map<String, Object> map = (Map<String, Object>) operation.get("account");
-            Cell account = row.createCell(2);
-            account.setCellValue((String) map.get("title"));
-            account.setCellStyle(cellStyleSheet);
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    (String) map.get("title"));
 
-            Cell category = row.createCell(3);
-            category.setCellValue(categoryTitleMap.get(UUID.fromString((String) operation.get("category"))));
-            category.setCellStyle(cellStyleSheet);
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    categoryTitleMap.get(UUID.fromString((String) operation.get("category"))));
 
-            Cell description = row.createCell(4);
-            description.setCellValue(operation.get("description") == null ? "" : operation.get("description").toString());
-            description.setCellStyle(cellStyleSheet);
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    operation.get("description") == null ? "" : operation.get("description").toString());
 
-            Cell value = row.createCell(5);
+            Cell value = row.createCell(++numberCell);
             double sum = (Double) operation.get("value");
             value.setCellValue(sum);
             if (sum < 0) {
@@ -420,9 +354,8 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
                 value.setCellStyle(cellStyleSheetGreen);
             }
 
-            Cell currency = row.createCell(6);
-            currency.setCellValue(currencyTitleMap.get(UUID.fromString((String) operation.get("currency"))));
-            currency.setCellStyle(cellStyleSheet);
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    currencyTitleMap.get(UUID.fromString((String) operation.get("currency"))));
         }
     }
 
@@ -437,6 +370,43 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
 
         return headers;
+    }
+
+    private CellStyle createCellStyle(XSSFWorkbook workbook, XSSFFont font,
+                                      boolean isWrapText, boolean isBorder) {
+        CellStyle cellStyle = workbook.createCellStyle();
+
+        cellStyle.setWrapText(isWrapText);
+        cellStyle.setFont(font);
+
+        if (isBorder) {
+            cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+            cellStyle.setBorderTop(BorderStyle.MEDIUM);
+            cellStyle.setBorderRight(BorderStyle.MEDIUM);
+            cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+        }
+
+        return cellStyle;
+    }
+
+    private XSSFFont createFont(XSSFWorkbook workbook, String fontName, short height,
+                                boolean isItalic, boolean isBold) {
+        XSSFFont font = workbook.createFont();
+
+        font.setFontName(fontName);
+        font.setFontHeightInPoints(height);
+        font.setItalic(isItalic);
+        font.setBold(isBold);
+
+        return font;
+    }
+
+    private Cell createCell(Row row, int numberCell, CellStyle cellStyle, String value) {
+        Cell cell = row.createCell(numberCell);
+        cell.setCellValue(value);
+        cell.setCellStyle(cellStyle);
+
+        return cell;
     }
 }
 

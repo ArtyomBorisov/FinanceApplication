@@ -8,6 +8,8 @@ services:
       POSTGRES_PASSWORD: root
     ports:
       - "5432:5432"
+    networks:
+      - finance_ntwrk
   pgadmin:
     build: pgadmin
     restart: always
@@ -16,32 +18,60 @@ services:
       PGADMIN_DEFAULT_PASSWORD: root
     ports:
       - "82:80"
+    networks:
+      - finance_ntwrk
   swagger-ui:
     build: swagger-ui
     ports:
       - "81:8080"
+    networks:
+      - finance_ntwrk
 
 
   account-scheduler-service:
     build: account-scheduler-service
     networks:
       - finance_ntwrk
+    depends_on:
+      - db
   account-service:
     build: account-service
     networks:
       - finance_ntwrk
-  classfier-service:
+    depends_on:
+      - db
+  user-service:
+    build: user-service
+    networks:
+      - finance_ntwrk
+    depends_on:
+      - db
+  classifier-service:
     build: classifier-service
     networks:
       - finance_ntwrk
+    depends_on:
+      - db
   report-service:
     build: report-service
     networks:
       - finance_ntwrk
+    depends_on:
+      - db
   proxy:
     build: proxy
     ports:
       - "80:80"
+    networks:
+      - finance_ntwrk
+    depends_on:
+      - account-scheduler-service
+      - account-service
+      - user-service
+      - classifier-service
+      - report-service
+      - swagger-ui
+      - pgadmin
 networks:
     finance_ntwrk:
       name: finance_ntwrk

@@ -6,6 +6,8 @@ public final class MessageError {
 
     public static final String SQL_ERROR = "Ошибка выполнения SQL";
 
+    public static final String REPORT_ERROR = "Ошибка формирования отчёта";
+
     public static final String INCORRECT_PARAMS = "Переданы некорректные параметры";
 
     public static final String INVALID_FORMAT = "Передан неверный формат";

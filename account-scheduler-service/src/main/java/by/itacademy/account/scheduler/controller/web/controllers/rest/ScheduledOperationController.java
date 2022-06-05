@@ -31,6 +31,7 @@ public class ScheduledOperationController {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
+    @ResponseStatus(HttpStatus.OK)
     public Page<ScheduledOperation> index(@RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                                           @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
         Pageable pageable = Pageable.ofSize(size).withPage(page);
@@ -38,6 +39,7 @@ public class ScheduledOperationController {
     }
 
     @PutMapping(value = "{uuid}/dt_update/{dt_update}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
     public void update(@PathVariable(name = "uuid") UUID id,
                        @PathVariable(name = "dt_update") LocalDateTime dtUpdate,
                        @RequestBody ScheduledOperation scheduledOperation) {

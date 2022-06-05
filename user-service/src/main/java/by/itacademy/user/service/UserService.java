@@ -1,14 +1,21 @@
 package by.itacademy.user.service;
 
+import by.itacademy.user.controller.dto.LoginDto;
 import by.itacademy.user.controller.utils.JwtTokenUtil;
 import by.itacademy.user.service.api.IUserService;
 import by.itacademy.user.service.api.UserRole;
+import by.itacademy.user.service.api.ValidationError;
+import by.itacademy.user.service.api.ValidationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,46 +32,62 @@ public class UserService implements IUserService {
 
     @Override
     @Transactional
-    public void registration(String login, String password) {
-//        добавить проверки login password на null
+    public void registration(LoginDto loginDto) {
+        this.checkLoginDto(loginDto);
+
+        String login = loginDto.getLogin();
+
         if (manager.userExists(login)) {
-            throw new IllegalArgumentException("Логин существует");
+            throw new ValidationException("Логин недоступен для регистрации");
         }
 
         this.manager.createUser(User.builder()
                 .username(login)
-                .password(encoder.encode(password))
+                .password(encoder.encode(loginDto.getPassword()))
                 .roles(UserRole.USER.toString())
                 .build());
     }
 
     @Override
-    public String authorization(String login, String password) {
-//        добавить проверки login password на null
+    public String authorization(LoginDto loginDto) {
+        String error = "Пароль или логин неверный (ые)";
+        this.checkLoginDto(loginDto);
 
-        UserDetails details = manager.loadUserByUsername(login);
+        UserDetails details;
+        try {
+            details = manager.loadUserByUsername(loginDto.getLogin());
+        } catch (UsernameNotFoundException e) {
+            throw new ValidationException(error);
+        }
 
-        if (!encoder.matches(password, details.getPassword())) {
-            throw new IllegalArgumentException("Пароль неверный");
-        } else if (!details.isEnabled()) {
-            throw new IllegalArgumentException("Пользователь удалён");
+        if (!encoder.matches(loginDto.getPassword(), details.getPassword()) || !details.isEnabled()) {
+            throw new ValidationException(error);
         }
 
         return JwtTokenUtil.generateAccessToken(details);
     }
 
-    @Override
-    public boolean isEnabled(String login, String password) {
-//        добавить проверки login password на null
-
-        UserDetails details = manager.loadUserByUsername(login);
-
-        if (!encoder.matches(password, details.getPassword())) {
-            throw new IllegalArgumentException("Пароль неверный");
-        } else if (!details.isEnabled()) {
-            throw new IllegalArgumentException("Пользователь удалён");
+    private void checkLoginDto(LoginDto loginDto) {
+        if (loginDto == null) {
+            throw new ValidationException("Не переданы логин и пароль");
         }
 
-        return true;
+        List<ValidationError> errors = new ArrayList<>();
+
+        if (isEmptyOrNull(loginDto.getLogin())) {
+            errors.add(new ValidationError("login", "Не передан логин"));
+        }
+
+        if (isEmptyOrNull(loginDto.getPassword())) {
+            errors.add(new ValidationError("password", "Не передан пароль"));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+    }
+
+    private boolean isEmptyOrNull(String str) {
+        return str == null || str.isEmpty();
     }
 }

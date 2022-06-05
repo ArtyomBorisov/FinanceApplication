@@ -1,12 +1,12 @@
-CREATE USER "${account-service-user}" WITH PASSWORD '${account-service-password}';
-CREATE DATABASE "account-service" WITH OWNER = "${account-service-user}";
+CREATE USER "account-service_user" WITH PASSWORD 'TiP22r1nJyyu';
+CREATE DATABASE "account_service" WITH OWNER = "account-service_user";
 \c "account-service"
 
 SET client_encoding = 'UTF8';
 
 CREATE SCHEMA app;
 
-ALTER SCHEMA app OWNER TO "${account-service-user}";
+ALTER SCHEMA app OWNER TO "account-service_user";
 
 CREATE FUNCTION app.changing_balance() RETURNS trigger
     LANGUAGE plpgsql
@@ -22,14 +22,14 @@ CREATE FUNCTION app.changing_balance() RETURNS trigger
 				RETURN NEW;
 			ELSIF (TG_OP = 'DELETE') THEN
 				UPDATE app.balance SET ("sum", dt_update) = ("sum" - OLD.value, now())
-                WHERE id = NEW.account;
+                WHERE id = OLD.account;
 				RETURN OLD;
 			END IF;
 		END;
 $$;
 
 
-ALTER FUNCTION app.changing_balance() OWNER TO "${account-service-user}";
+ALTER FUNCTION app.changing_balance() OWNER TO "account-service_user";
 
 SET default_tablespace = '';
 
@@ -45,7 +45,7 @@ CREATE TABLE app.account (
     "user" character varying NOT NULL
 );
 
-ALTER TABLE app.account OWNER TO "${account-service-user}";
+ALTER TABLE app.account OWNER TO "account-service_user";
 
 CREATE TABLE app.balance (
     id uuid NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE app.balance (
     sum numeric(1000,2) NOT NULL
 );
 
-ALTER TABLE app.balance OWNER TO "${account-service-user}";
+ALTER TABLE app.balance OWNER TO "account-service_user";
 
 CREATE TABLE app.operation (
     id uuid NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE app.operation (
     account uuid NOT NULL
 );
 
-ALTER TABLE app.operation OWNER TO "${account-service-user}";
+ALTER TABLE app.operation OWNER TO "account-service_user";
 
 ALTER TABLE ONLY app.account
     ADD CONSTRAINT account_pk PRIMARY KEY (id);

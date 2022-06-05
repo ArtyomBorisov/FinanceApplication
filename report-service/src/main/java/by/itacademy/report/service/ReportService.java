@@ -59,27 +59,19 @@ public class ReportService implements IReportService {
         switch (type) {
             case BALANCE:
                 this.reportExecutionService = context.getBean(ReportBalanceExecutionService.class);
-                description = "Отчёт по балансам, запрос от " + LocalDate.now()
-                        .format(DateTimeFormatter.ofPattern(pattern));
+                description = "Отчёт по балансам, запрос от ";
                 break;
             case BY_DATE:
-                params.put("type", ReportType.BY_DATE.toString());
                 this.reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
-                description = "Отчёт по операциям, запрос от " + LocalDate.now()
-                        .format(DateTimeFormatter.ofPattern(pattern));
+                description = "Отчёт по операциям в разрезе дат, запрос от ";
                 break;
             case BY_CATEGORY:
-                params.put("type", ReportType.BY_CATEGORY.toString());
                 this.reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
-                description = "Отчёт по операциям, запрос от " + LocalDate.now()
-                        .format(DateTimeFormatter.ofPattern(pattern));
+                description = "Отчёт по операциям в разрезе категорий, запрос от ";
                 break;
             default:
                 throw new RuntimeException("Нет реализации такого отчёта");
         }
-
-        ByteArrayOutputStream data = this.reportExecutionService.execute(params);
-        params.remove("type");
 
         UUID id = UUID.randomUUID();
         LocalDateTime timeNow = LocalDateTime.now();
@@ -88,17 +80,35 @@ public class ReportService implements IReportService {
                 .setId(id)
                 .setDtCreate(timeNow)
                 .setDtUpdate(timeNow)
-                .setStatus(Status.DONE)
+                .setStatus(Status.LOADED)
                 .setType(type)
-                .setDescription(description)
+                .setDescription(description + LocalDate.now().format(DateTimeFormatter.ofPattern(pattern)))
                 .setParams(params)
                 .setUser(login)
                 .build();
 
+        params.put("type", type.toString());
+        ByteArrayOutputStream data = null;
+
+        try {
+            data = this.reportExecutionService.execute(params);
+            report.setStatus(Status.DONE);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            report.setStatus(Status.ERROR);
+        }
+
+        params.remove("type");
+
         try {
             this.reportRepository.save(this.conversionService.convert(report, ReportEntity.class));
 
-            this.reportFileRepository.save(this.conversionService.convert(new ReportFile(id, data, login), ReportFileEntity.class));
+            if (data != null) {
+                this.reportFileRepository.save(this.conversionService.convert(
+                        new ReportFile(id, data, login),
+                        ReportFileEntity.class));
+            }
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }

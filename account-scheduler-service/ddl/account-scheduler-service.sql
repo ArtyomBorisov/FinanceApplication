@@ -1,17 +1,16 @@
-CREATE USER "${scheduler.service.user}" WITH PASSWORD '${scheduler.service.password}';
-CREATE DATABASE "account-scheduler-service" WITH OWNER = "${scheduler.service.user}";
-\c "account-scheduler-service"
-
+CREATE USER "account-scheduler-service_user" WITH PASSWORD 'P6OaVGkh4TjU';
+CREATE DATABASE "account_scheduler_service" WITH OWNER = "account-scheduler-service_user";
+\c "account_scheduler_service"
 
 SET client_encoding = 'UTF8';
 
 CREATE SCHEMA app;
 
-ALTER SCHEMA app OWNER TO "${scheduler.service.user}";
+ALTER SCHEMA app OWNER TO "account-scheduler-service_user";
 
 CREATE SCHEMA quartz;
 
-ALTER SCHEMA quartz OWNER TO "${scheduler.service.user}";
+ALTER SCHEMA quartz OWNER TO "account-scheduler-service_user";
 
 SET default_tablespace = '';
 
@@ -31,7 +30,7 @@ CREATE TABLE app.scheduled_operation (
     "user" character varying NOT NULL
 );
 
-ALTER TABLE app.scheduled_operation OWNER TO "${scheduler.service.user}";
+ALTER TABLE app.scheduled_operation OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_blob_triggers (
     sched_name character varying(120) NOT NULL,
@@ -40,7 +39,7 @@ CREATE TABLE quartz.qrtz_blob_triggers (
     blob_data bytea
 );
 
-ALTER TABLE quartz.qrtz_blob_triggers OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_blob_triggers OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_calendars (
     sched_name character varying(120) NOT NULL,
@@ -48,7 +47,7 @@ CREATE TABLE quartz.qrtz_calendars (
     calendar bytea NOT NULL
 );
 
-ALTER TABLE quartz.qrtz_calendars OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_calendars OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_cron_triggers (
     sched_name character varying(120) NOT NULL,
@@ -58,7 +57,7 @@ CREATE TABLE quartz.qrtz_cron_triggers (
     time_zone_id character varying(80)
 );
 
-ALTER TABLE quartz.qrtz_cron_triggers OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_cron_triggers OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_fired_triggers (
     sched_name character varying(120) NOT NULL,
@@ -76,7 +75,7 @@ CREATE TABLE quartz.qrtz_fired_triggers (
     requests_recovery boolean
 );
 
-ALTER TABLE quartz.qrtz_fired_triggers OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_fired_triggers OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_job_details (
     sched_name character varying(120) NOT NULL,
@@ -91,21 +90,21 @@ CREATE TABLE quartz.qrtz_job_details (
     job_data bytea
 );
 
-ALTER TABLE quartz.qrtz_job_details OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_job_details OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_locks (
     sched_name character varying(120) NOT NULL,
     lock_name character varying(40) NOT NULL
 );
 
-ALTER TABLE quartz.qrtz_locks OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_locks OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_paused_trigger_grps (
     sched_name character varying(120) NOT NULL,
     trigger_group character varying(200) NOT NULL
 );
 
-ALTER TABLE quartz.qrtz_paused_trigger_grps OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_paused_trigger_grps OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_scheduler_state (
     sched_name character varying(120) NOT NULL,
@@ -114,7 +113,7 @@ CREATE TABLE quartz.qrtz_scheduler_state (
     checkin_interval bigint NOT NULL
 );
 
-ALTER TABLE quartz.qrtz_scheduler_state OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_scheduler_state OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_simple_triggers (
     sched_name character varying(120) NOT NULL,
@@ -125,7 +124,7 @@ CREATE TABLE quartz.qrtz_simple_triggers (
     times_triggered bigint NOT NULL
 );
 
-ALTER TABLE quartz.qrtz_simple_triggers OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_simple_triggers OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_simprop_triggers (
     sched_name character varying(120) NOT NULL,
@@ -144,7 +143,7 @@ CREATE TABLE quartz.qrtz_simprop_triggers (
     bool_prop_2 boolean
 );
 
-ALTER TABLE quartz.qrtz_simprop_triggers OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_simprop_triggers OWNER TO "account-scheduler-service_user";
 
 CREATE TABLE quartz.qrtz_triggers (
     sched_name character varying(120) NOT NULL,
@@ -165,7 +164,7 @@ CREATE TABLE quartz.qrtz_triggers (
     job_data bytea
 );
 
-ALTER TABLE quartz.qrtz_triggers OWNER TO "${scheduler.service.user}";
+ALTER TABLE quartz.qrtz_triggers OWNER TO "account-scheduler-service_user";
 
 ALTER TABLE app.scheduled_operation
     ADD CONSTRAINT "interval" CHECK (("interval" > 0)) NOT VALID;

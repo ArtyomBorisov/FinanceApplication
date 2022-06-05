@@ -1,12 +1,12 @@
-CREATE USER "${classifier.service.user}" WITH PASSWORD '${classifier.service.password}';
-CREATE DATABASE "classifier_service" WITH OWNER = "${classifier.service.user}";
-\c "classifier-service"
+CREATE USER "classifier-service_user" WITH PASSWORD 'kswDW9g1dbfA';
+CREATE DATABASE "classifier_service" WITH OWNER = "classifier-service_user";
+\c "classifier_service"
 
 SET client_encoding = 'UTF8';
 
 CREATE SCHEMA app;
 
-ALTER SCHEMA app OWNER TO "${classifier.service.user}";
+ALTER SCHEMA app OWNER TO "classifier-service_user";
 
 SET default_tablespace = '';
 
@@ -17,7 +17,7 @@ CREATE TABLE app.category (
     title character varying NOT NULL
 );
 
-ALTER TABLE app.category OWNER TO "${classifier.service.user}";
+ALTER TABLE app.category OWNER TO "classifier-service_user";
 
 CREATE TABLE app.currency (
     id uuid NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE app.currency (
     description character varying NOT NULL
 );
 
-ALTER TABLE app.currency OWNER TO "${classifier.service.user}";
+ALTER TABLE app.currency OWNER TO "classifier-service_user";
 
 ALTER TABLE ONLY app.category
     ADD CONSTRAINT category_pk PRIMARY KEY (id);

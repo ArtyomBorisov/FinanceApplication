@@ -2,6 +2,7 @@ package by.itacademy.account.model;
 
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.account.model.api.serializer.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -40,7 +41,7 @@ public class Operation {
     @JsonProperty("currency")
     private UUID currency;
 
-//    @JsonIgnore
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonProperty("account")
     private Account account;
 

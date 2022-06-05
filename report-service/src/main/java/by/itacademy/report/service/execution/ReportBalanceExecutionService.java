@@ -59,7 +59,7 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
 
     @Transactional
     @Override
-    public ByteArrayOutputStream execute(Map<String, Object> params) {
+    public ByteArrayOutputStream execute(Map<String, Object> params) throws Exception {
         Object obj = params.get("accounts");
         String acc = "accounts: id счёта";
         List<UUID> accountsUuid = null;
@@ -152,7 +152,7 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
 
             return outputStream;
         } catch (IOException e) {
-            throw new RuntimeException("Ошибка составления отчёта");
+            throw new RuntimeException(MessageError.REPORT_ERROR, e);
         }
     }
 
@@ -167,51 +167,25 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 3));
         sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 3));
 
-        XSSFFont fontHeaderRow = workbook.createFont();
-        fontHeaderRow.setFontName(this.fontName);
-        fontHeaderRow.setFontHeightInPoints((short) 14);
-        fontHeaderRow.setItalic(true);
+        XSSFFont fontHeaderRow = this.createFont(workbook, this.fontName, (short) 14, true, false);
+        XSSFFont fontHeaderSheet = this.createFont(workbook, fontName, (short) 12, false, true);
 
-        XSSFFont fontHeaderSheet = workbook.createFont();
-        fontHeaderSheet.setFontName(this.fontName);
-        fontHeaderSheet.setFontHeightInPoints((short) 12);
-        fontHeaderSheet.setBold(true);
-
-        CellStyle cellStyleHeaderRow = workbook.createCellStyle();
+        CellStyle cellStyleHeaderRow = this.createCellStyle(workbook, fontHeaderRow, true, false);
         cellStyleHeaderRow.setAlignment(HorizontalAlignment.CENTER);
-        cellStyleHeaderRow.setFont(fontHeaderRow);
 
-        CellStyle cellStyleHeaderSheet = workbook.createCellStyle();
+        CellStyle cellStyleHeaderSheet = this.createCellStyle(workbook, fontHeaderSheet, true, true);
         cellStyleHeaderSheet.setAlignment(HorizontalAlignment.CENTER);
-        cellStyleHeaderSheet.setFont(fontHeaderSheet);
-        cellStyleHeaderSheet.setBorderBottom(BorderStyle.MEDIUM);
-        cellStyleHeaderSheet.setBorderTop(BorderStyle.MEDIUM);
-        cellStyleHeaderSheet.setBorderRight(BorderStyle.MEDIUM);
-        cellStyleHeaderSheet.setBorderLeft(BorderStyle.MEDIUM);
 
-        Cell headerCell1 = rowHeader1.createCell(0);
-        headerCell1.setCellValue("Отчёт по балансам счетов");
-        headerCell1.setCellStyle(cellStyleHeaderRow);
+        this.createCell(rowHeader1, 0, cellStyleHeaderRow, "Отчёт по балансам счетов");
+        this.createCell(rowHeader2, 0, cellStyleHeaderRow,
+                "Составлен на " + time.format(DateTimeFormatter.ofPattern("HH:mm dd.MM.yyyy")));
 
-        Cell headerCell2 = rowHeader2.createCell(0);
-        headerCell2.setCellValue("Составлен на " + time.format(DateTimeFormatter.ofPattern("HH:mm dd.MM.yyyy")));
-        headerCell2.setCellStyle(cellStyleHeaderRow);
+        int numberCell = -1;
 
-        Cell title1 = rowTitles.createCell(0);
-        title1.setCellValue("Счёт");
-        title1.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title2 = rowTitles.createCell(1);
-        title2.setCellValue("Тип");
-        title2.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title3 = rowTitles.createCell(2);
-        title3.setCellValue("Валюта");
-        title3.setCellStyle(cellStyleHeaderSheet);
-
-        Cell title4 = rowTitles.createCell(3);
-        title4.setCellValue("Баланс");
-        title4.setCellStyle(cellStyleHeaderSheet);
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Счёт");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Тип");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Валюта");
+        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Баланс");
     }
 
     private void fillSheet(XSSFWorkbook workbook,
@@ -219,38 +193,20 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
                            Map<UUID, String> titlesCurrency) throws JsonProcessingException {
         Sheet sheet = workbook.getSheet(this.sheetName);
 
-        XSSFFont fontSheet = workbook.createFont();
-        fontSheet.setFontName(this.fontName);
-        fontSheet.setFontHeightInPoints((short) 11);
+        XSSFFont fontSheet = this.createFont(workbook, this.fontName, (short) 11, false, false);
 
-        CellStyle cellStyleSheet = workbook.createCellStyle();
-        cellStyleSheet.setWrapText(true);
-        cellStyleSheet.setFont(fontSheet);
-        cellStyleSheet.setBorderBottom(BorderStyle.MEDIUM);
-        cellStyleSheet.setBorderTop(BorderStyle.MEDIUM);
-        cellStyleSheet.setBorderRight(BorderStyle.MEDIUM);
-        cellStyleSheet.setBorderLeft(BorderStyle.MEDIUM);
+        CellStyle cellStyleSheet = this.createCellStyle(workbook, fontSheet, true, true);
 
         int numberRow = 2;
         for (Map<String, Object> acc : accounts) {
             Row row = sheet.createRow(++numberRow);
 
-            Cell titleCell = row.createCell(0);
-            titleCell.setCellValue((String) acc.get("title"));
-            titleCell.setCellStyle(cellStyleSheet);
-
-            Cell typeCell = row.createCell(1);
-            typeCell.setCellValue((String) acc.get("type"));
-            typeCell.setCellStyle(cellStyleSheet);
-
-            Cell currencyCell = row.createCell(2);
-            currencyCell.setCellValue(titlesCurrency.get(
-                    UUID.fromString((String) acc.get("currency"))));
-            currencyCell.setCellStyle(cellStyleSheet);
-
-            Cell balanceCell = row.createCell(3);
-            balanceCell.setCellValue((Double) acc.get("balance"));
-            balanceCell.setCellStyle(cellStyleSheet);
+            int numberCell = -1;
+            this.createCell(row, ++numberCell, cellStyleSheet, acc.get("title"));
+            this.createCell(row, ++numberCell, cellStyleSheet, acc.get("type"));
+            this.createCell(row, ++numberCell, cellStyleSheet,
+                    titlesCurrency.get(UUID.fromString((String) acc.get("currency"))));
+            this.createCell(row, ++numberCell, cellStyleSheet, acc.get("balance"));
         }
     }
 
@@ -289,5 +245,46 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
         headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         return headers;
+    }
+
+    private CellStyle createCellStyle(XSSFWorkbook workbook, XSSFFont font,
+                                      boolean isWrapText, boolean isBorder) {
+        CellStyle cellStyle = workbook.createCellStyle();
+
+        cellStyle.setWrapText(isWrapText);
+        cellStyle.setFont(font);
+
+        if (isBorder) {
+            cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+            cellStyle.setBorderTop(BorderStyle.MEDIUM);
+            cellStyle.setBorderRight(BorderStyle.MEDIUM);
+            cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+        }
+
+        return cellStyle;
+    }
+
+    private XSSFFont createFont(XSSFWorkbook workbook, String fontName, short height,
+                                boolean isItalic, boolean isBold) {
+        XSSFFont font = workbook.createFont();
+
+        font.setFontName(fontName);
+        font.setFontHeightInPoints(height);
+        font.setItalic(isItalic);
+        font.setBold(isBold);
+
+        return font;
+    }
+
+    private Cell createCell(Row row, int numberCell, CellStyle cellStyle, Object value) {
+        Cell cell = row.createCell(numberCell);
+        if (value instanceof String) {
+            cell.setCellValue((String) value);
+        } else if (value instanceof Double) {
+            cell.setCellValue((Double) value);
+        }
+        cell.setCellStyle(cellStyle);
+
+        return cell;
     }
 }

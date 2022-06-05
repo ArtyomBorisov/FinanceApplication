@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/public")
+@RequestMapping("/public/user")
 public class UserController {
 
     private final IUserService userService;
@@ -18,13 +18,13 @@ public class UserController {
     @PostMapping(value = "/reg")
     @ResponseStatus(HttpStatus.CREATED)
     public void registration(@RequestBody LoginDto loginDto){
-        this.userService.registration(loginDto.getLogin(), loginDto.getPassword());
+        this.userService.registration(loginDto);
     }
 
     @PostMapping(value = "/login")
     @ResponseBody
     @ResponseStatus(HttpStatus.OK)
     public String login(@RequestBody LoginDto loginDto){
-        return this.userService.authorization(loginDto.getLogin(), loginDto.getPassword());
+        return this.userService.authorization(loginDto);
     }
 }

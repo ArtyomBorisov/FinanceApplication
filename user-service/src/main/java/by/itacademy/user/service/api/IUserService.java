@@ -1,7 +1,8 @@
 package by.itacademy.user.service.api;
 
+import by.itacademy.user.controller.dto.LoginDto;
+
 public interface IUserService {
-    void registration(String login, String password);
-    String authorization(String login, String password);
-    boolean isEnabled(String login, String password);
+    void registration(LoginDto loginDto);
+    String authorization(LoginDto loginDt);
 }
