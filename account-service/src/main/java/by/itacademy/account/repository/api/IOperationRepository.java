@@ -3,40 +3,40 @@ package by.itacademy.account.repository.api;
 import by.itacademy.account.repository.entity.OperationEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
-public interface IOperationRepository extends JpaRepository<OperationEntity, UUID> {
+public interface IOperationRepository extends JpaRepository<OperationEntity, UUID>,
+        JpaSpecificationExecutor<OperationEntity> {
+
     Page<OperationEntity> findByAccountEntity_IdOrderByDtCreateAsc(UUID idAccount, Pageable pageable);
     Optional<OperationEntity> findByIdAndAccountEntity_Id(UUID idOperation, UUID idAccount);
 
-    Page<OperationEntity> findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-            List<UUID> accounts,
-            List<UUID> categories,
-            LocalDateTime from,
-            LocalDateTime to,
-            Pageable pageable);
+    static Specification<OperationEntity> hasUser(String login) {
+        return (entity, cq, cb) -> cb.equal(entity.get("account.user"), login);
+    }
 
-    Page<OperationEntity> findByAccountEntity_UserAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-            String login,
-            List<UUID> categories,
-            LocalDateTime from,
-            LocalDateTime to,
-            Pageable pageable);
+    static Specification<OperationEntity> accountsIdIn(Set<UUID> accounts) {
+        return (entity, cq, cb) -> cb.in(entity.get("account.id")).value(accounts);
+    }
 
-    Page<OperationEntity> findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(List<UUID> accounts,
-                                                                                              LocalDateTime from,
-                                                                                              LocalDateTime to,
-                                                                                              Pageable pageable);
+    static Specification<OperationEntity> categoriesIdIn(Set<UUID> categories) {
+        return (entity, cq, cb) -> cb.in(entity.get("category")).value(categories);
+    }
 
-    Page<OperationEntity> findByAccountEntity_UserAndDateGreaterThanEqualAndDateLessThanEqual(String login,
-                                                                                              LocalDateTime from,
-                                                                                              LocalDateTime to,
-                                                                                              Pageable pageable);
+    static Specification<OperationEntity> dateGreaterThan(LocalDateTime from) {
+        return (entity, cq, cb) -> cb.greaterThan(entity.get("date"), from);
+    }
+
+    static Specification<OperationEntity> dateLessThan(LocalDateTime to) {
+        return (entity, cq, cb) -> cb.lessThan(entity.get("date"), to);
+    }
 }

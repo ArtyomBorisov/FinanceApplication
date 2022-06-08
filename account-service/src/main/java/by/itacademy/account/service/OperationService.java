@@ -11,6 +11,7 @@ import by.itacademy.account.service.api.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,11 +34,20 @@ public class OperationService implements IOperationService {
     @Value("${classifier_category_url}")
     private String categoryUrl;
 
+    @Value("${default_day_interval}")
+    private int defaultDayInterval;
+
     private final IOperationRepository operationRepository;
     private final IAccountService accountService;
     private final ConversionService conversionService;
     private final RestTemplate restTemplate;
     private final UserHolder userHolder;
+
+    private final String typeParam = "type";
+    private final String accountsParam = "accounts";
+    private final String categoriesParam = "categories";
+    private final String fromParam = "from";
+    private final String toParam = "to";
 
     public OperationService(IOperationRepository operationRepository,
                             IAccountService accountService,
@@ -91,13 +101,7 @@ public class OperationService implements IOperationService {
 
     @Override
     public Page<Operation> get(UUID idAccount, Pageable pageable) {
-        List<ValidationError> errors = new ArrayList<>();
-
-        this.checkIdAccount(idAccount, errors);
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        this.checkIdAccount(idAccount);
 
         Page<OperationEntity> entities;
 
@@ -107,143 +111,33 @@ public class OperationService implements IOperationService {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        Account account = this.accountService.get(idAccount);
-
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Operation.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Override
-    public Page<Operation> getByParams(Map<String, Object> params, Pageable pageable) {
+    public Page<Operation> getByParams(Map<String, Object> rawParams, Pageable pageable) {
         String login = this.userHolder.getLoginFromContext();
 
-        String typeParam = "type";
-        String accountsParam = "accounts";
-        String categoriesParam = "categories";
-        String fromParam = "from";
-        String toParam = "to";
+        Map<String, Object> checkedParams = this.checkParams(rawParams);
 
-        Object type = params.get(typeParam);
-        Object accountsObj = params.get(accountsParam);
-        Object categoriesObj = params.get(categoriesParam);
-        Object fromDateObj = params.get(fromParam);
-        Object toDateObj = params.get(toParam);
-
-        List<Sort.Order> orders = new ArrayList<>();
-        List<UUID> accountsUuid = null;
-        List<UUID> categoriesUuid = null;
-        LocalDateTime from = null;
-        LocalDateTime to = null;
-
-        List<ValidationError> errors = new ArrayList<>();
-
-        if (type instanceof String) {
-            try {
-                ParamSort paramSort = ParamSort.valueOf((String) type);
-
-                switch (paramSort) {
-                    case BY_CATEGORY:
-                        orders.add(new Sort.Order(Sort.Direction.ASC, "category"));
-                        orders.add(new Sort.Order(Sort.Direction.ASC, "value"));
-                        break;
-                    case BY_DATE:
-                        orders.add(new Sort.Order(Sort.Direction.ASC, "date"));
-                        break;
-                    default:
-                        throw new RuntimeException("Нет реализации сортировки");
-                }
-            } catch (IllegalArgumentException e) {
-                errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
-            }
-        } else if (type == null){
-            errors.add(new ValidationError(typeParam, MessageError.MISSING_FIELD));
-        } else {
-            errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
-        }
+        List<Sort.Order> orders = (List<Sort.Order>) checkedParams.get(this.typeParam);
+        Set<UUID> accountsUuidSet = (Set<UUID>) checkedParams.get(this.accountsParam);
+        Set<UUID> categoriesUuidSet = (Set<UUID>) checkedParams.get(this.categoriesParam);
+        LocalDateTime from = (LocalDateTime) checkedParams.get(this.fromParam);
+        LocalDateTime to = (LocalDateTime) checkedParams.get(this.toParam);
 
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(orders));
 
-        try {
-            if (accountsObj instanceof Collection) {
-                accountsUuid = ((Collection<?>) accountsObj).stream()
-                        .map(uuid -> UUID.fromString((String) uuid))
-                        .collect(Collectors.toList());
-
-                for (UUID id : accountsUuid) {
-                    if (!this.accountService.isAccountExist(id)) {
-                        errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
-                    }
-                }
-            } else if (accountsObj != null) {
-                errors.add(new ValidationError(accountsParam, MessageError.INVALID_FORMAT));
-            }
-
-            if (categoriesObj instanceof Collection) {
-                categoriesUuid = ((Collection<?>) categoriesObj).stream()
-                        .map(uuid -> UUID.fromString((String) uuid))
-                        .collect(Collectors.toList());
-
-                HttpEntity<Object> entity = new HttpEntity<>(this.createHeaders());
-                for (UUID id : categoriesUuid) {
-                    this.checkCategoryId(id, entity, errors);
-                }
-            } else if (categoriesObj != null) {
-                errors.add(new ValidationError(categoriesParam, MessageError.INVALID_FORMAT));
-            }
-        } catch (IllegalArgumentException e) {
-            errors.add(new ValidationError("uuid", MessageError.INVALID_FORMAT));
-        }
-
-        if (fromDateObj instanceof Number) {
-            LocalDate dt = LocalDate.ofEpochDay((int) fromDateObj);
-            from = LocalDateTime.of(dt, LocalTime.MIN);
-        } else if (fromDateObj != null) {
-            errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
-        }
-
-        if (toDateObj instanceof Number) {
-            LocalDate dt = LocalDate.ofEpochDay((int) toDateObj);
-            to = LocalDateTime.of(dt, LocalTime.MAX);
-        } else if (toDateObj != null) {
-            errors.add(new ValidationError(toParam, MessageError.INVALID_FORMAT));
-        }
-
-        if (from != null && to == null) {
-            to = LocalDateTime.of(from.plusDays(90).toLocalDate(), LocalTime.MAX);
-        } else if (from == null && to != null) {
-            from = LocalDateTime.of(to.minusDays(90).toLocalDate(), LocalTime.MIN);
-        } else if (from == null && to == null) {
-            errors.add(new ValidationError(fromParam, MessageError.MISSING_FIELD));
-            errors.add(new ValidationError(toParam, MessageError.MISSING_FIELD));
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
-
-        Page<OperationEntity> entities;
-
-        if (!emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
-             entities = this.operationRepository
-                    .findByAccountEntity_IdInAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            accountsUuid, categoriesUuid, from, to, sorted);
-
-        } else if (emptyOrNull(accountsUuid) && !emptyOrNull(categoriesUuid)) {
-            entities = this.operationRepository
-                    .findByAccountEntity_UserAndCategoryInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            login, categoriesUuid, from, to, sorted);
-
-        } else if (!emptyOrNull(accountsUuid) && emptyOrNull(categoriesUuid)) {
-            entities = this.operationRepository
-                    .findByAccountEntity_IdInAndDateGreaterThanEqualAndDateLessThanEqual(
-                            accountsUuid, from, to, sorted);
-
-        } else {
-            entities = this.operationRepository
-                    .findByAccountEntity_UserAndDateGreaterThanEqualAndDateLessThanEqual(login, from, to, sorted);
-        }
+        Page<OperationEntity> entities = this.operationRepository.findAll(Specification
+                        .where(IOperationRepository.hasUser(login))
+                        .and(IOperationRepository.accountsIdIn(accountsUuidSet))
+                        .and(IOperationRepository.categoriesIdIn(categoriesUuidSet))
+                        .and(IOperationRepository.dateGreaterThan(from))
+                        .and(IOperationRepository.dateLessThan(to)),
+                sorted);
 
         return new PageImpl<>(entities.stream()
                 .map(operationEntity -> this.conversionService.convert(operationEntity, Operation.class)
@@ -253,14 +147,9 @@ public class OperationService implements IOperationService {
 
     @Override
     public Operation get(UUID idAccount, UUID idOperation) {
-        List<ValidationError> errors = new ArrayList<>();
+        this.checkIdAccount(idAccount);
+
         OperationEntity entity = null;
-
-        this.checkIdAccount(idAccount, errors);
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
 
         try {
             entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
@@ -279,28 +168,8 @@ public class OperationService implements IOperationService {
     @Transactional
     @Override
     public Operation update(Operation operation, UUID idAccount, UUID idOperation, LocalDateTime dtUpdate) {
-        List<ValidationError> errors = new ArrayList<>();
-        OperationEntity entity = null;
-
-        this.checkOperation(operation, errors);
-
-        if (this.checkIdAccount(idAccount, errors)) {
-            this.checkIdOperation(idOperation, idAccount, errors);
-        }
-
-        try {
-            entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
-        } catch (Exception e) {
-            throw new RuntimeException(MessageError.SQL_ERROR, e);
-        }
-
-        if (entity != null) {
-            this.checkDtUpdate(dtUpdate, entity, errors);
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        this.checkOperation(operation);
+        OperationEntity entity = this.get(idAccount, idOperation, dtUpdate);
 
         if (operation.getDate() == null) {
             operation.setDate(LocalDateTime.now());
@@ -327,11 +196,141 @@ public class OperationService implements IOperationService {
     @Transactional
     @Override
     public void delete(UUID idAccount, UUID idOperation, LocalDateTime dtUpdate) {
+        OperationEntity entity = this.get(idAccount, idOperation, dtUpdate);
+
+        try {
+            this.operationRepository.delete(entity);
+        } catch (Exception e) {
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
+        }
+    }
+
+    private Map<String, Object> checkParams(Map<String, Object> rawParams) {
+        Map<String, Object> checkedParams = new HashMap<>();
+
+        Object typeObj = rawParams.get(this.typeParam);
+        Object accountsObj = rawParams.get(this.accountsParam);
+        Object categoriesObj = rawParams.get(this.categoriesParam);
+        Object fromDateObj = rawParams.get(this.fromParam);
+        Object toDateObj = rawParams.get(this.toParam);
+
+        List<Sort.Order> orders = new ArrayList<>();
+        List<ValidationError> errors = new ArrayList<>();
+
+        if (typeObj instanceof String) {
+            try {
+                ParamSort paramSort = ParamSort.valueOf((String) typeObj);
+
+                switch (paramSort) {
+                    case BY_CATEGORY:
+                        orders.add(new Sort.Order(Sort.Direction.ASC, "category"));
+                        orders.add(new Sort.Order(Sort.Direction.ASC, "value"));
+                        break;
+                    case BY_DATE:
+                        orders.add(new Sort.Order(Sort.Direction.ASC, "date"));
+                        break;
+                    default:
+                        throw new RuntimeException("Нет реализации сортировки");
+                }
+            } catch (IllegalArgumentException e) {
+                errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
+            }
+        } else if (typeObj == null){
+            errors.add(new ValidationError(typeParam, MessageError.MISSING_FIELD));
+        } else {
+            errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
+        }
+
+        Set<UUID> accountsUuidSet = null;
+        Set<UUID> categoriesUuidSet = null;
+
+        try {
+            if (accountsObj instanceof Collection) {
+                accountsUuidSet = ((Collection<?>) accountsObj).stream()
+                        .map(uuid -> UUID.fromString((String) uuid))
+                        .collect(Collectors.toSet());
+
+                for (UUID id : accountsUuidSet) {
+                    if (!this.accountService.isAccountExist(id)) {
+                        errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+                    }
+                }
+            } else if (accountsObj != null) {
+                errors.add(new ValidationError(accountsParam, MessageError.INVALID_FORMAT));
+            }
+
+            if (categoriesObj instanceof Collection) {
+                categoriesUuidSet = ((Collection<?>) categoriesObj).stream()
+                        .map(uuid -> UUID.fromString((String) uuid))
+                        .collect(Collectors.toSet());
+
+                HttpEntity<Object> entity = new HttpEntity<>(this.createHeaders());
+                for (UUID id : categoriesUuidSet) {
+                    this.checkCategoryId(id, entity, errors);
+                }
+            } else if (categoriesObj != null) {
+                errors.add(new ValidationError(categoriesParam, MessageError.INVALID_FORMAT));
+            }
+        } catch (IllegalArgumentException e) {
+            errors.add(new ValidationError("uuid", MessageError.INVALID_FORMAT));
+        }
+
+        LocalDateTime from = this.checkParamDate(fromDateObj, LocalTime.MIN, this.fromParam, errors);
+        LocalDateTime to = this.checkParamDate(toDateObj, LocalTime.MAX, this.toParam, errors);
+
+        if (from != null && to == null) {
+            to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
+        } else if (from == null && to != null) {
+            from = LocalDateTime.of(to.minusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MIN);
+        } else if (from == null && to == null) {
+            errors.add(new ValidationError(this.fromParam + ", " + this.toParam,
+                    "Требуется передать как минимум один параметр из указанных"));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
+        checkedParams.put(this.typeParam, orders);
+        checkedParams.put(this.accountsParam, accountsUuidSet);
+        checkedParams.put(this.categoriesParam, categoriesUuidSet);
+        checkedParams.put(this.fromParam, from);
+        checkedParams.put(this.toParam, to);
+
+        return checkedParams;
+    }
+
+    private LocalDateTime checkParamDate(Object obj, LocalTime time, String paramName, List<ValidationError> errors) {
+        LocalDateTime ldt = null;
+
+        if (obj instanceof Number) {
+            LocalDate dt = LocalDate.ofEpochDay((int) obj);
+            ldt = LocalDateTime.of(dt, time);
+        } else if (obj != null) {
+            errors.add(new ValidationError(paramName, MessageError.INVALID_FORMAT));
+        }
+
+        return ldt;
+    }
+
+    private OperationEntity get(UUID idAccount, UUID idOperation, LocalDateTime dtUpdate) {
         List<ValidationError> errors = new ArrayList<>();
         OperationEntity entity = null;
 
         if (this.checkIdAccount(idAccount, errors)) {
-            this.checkIdOperation(idOperation, idAccount, errors);
+            if (idOperation == null) {
+                errors.add(new ValidationError("id operation", MessageError.MISSING_FIELD));
+            } else {
+                try {
+                    if (idAccount != null
+                            && this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
+
+                        errors.add(new ValidationError("id operation", MessageError.ID_NOT_EXIST));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(MessageError.SQL_ERROR, e);
+                }
+            }
         }
 
         try {
@@ -340,19 +339,17 @@ public class OperationService implements IOperationService {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        if (entity != null) {
-            this.checkDtUpdate(dtUpdate, entity, errors);
+        if (entity != null && dtUpdate == null) {
+            errors.add(new ValidationError("dtUpdate (параметр последнего обновления)", MessageError.MISSING_FIELD));
+        } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
+            errors.add(new ValidationError("dtUpdate", MessageError.INVALID_DT_UPDATE));
         }
 
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
 
-        try {
-            this.operationRepository.delete(entity);
-        } catch (Exception e) {
-            throw new RuntimeException(MessageError.SQL_ERROR, e);
-        }
+        return entity;
     }
 
     private void checkOperation(Operation operation, List<ValidationError> errors) {
@@ -387,32 +384,13 @@ public class OperationService implements IOperationService {
         }
     }
 
-    private void checkIdOperation(UUID idOperation,
-                                  UUID idAccount,
-                                  List<ValidationError> errors) {
-        if (idOperation == null) {
-            errors.add(new ValidationError("id operation", MessageError.MISSING_FIELD));
-            return;
-        }
+    private void checkOperation(Operation operation) {
+        List<ValidationError> errors = new ArrayList<>();
 
-        try {
-            if (idAccount != null
-                    && this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
+        this.checkOperation(operation, errors);
 
-                errors.add(new ValidationError("id operation", MessageError.ID_NOT_EXIST));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(MessageError.SQL_ERROR, e);
-        }
-    }
-
-    private void checkDtUpdate(LocalDateTime dtUpdate,
-                               OperationEntity entity,
-                               List<ValidationError> errors) {
-        if (dtUpdate == null) {
-            errors.add(new ValidationError("dtUpdate (параметр последнего обновления)", MessageError.MISSING_FIELD));
-        } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
-            errors.add(new ValidationError("dtUpdate", MessageError.INVALID_DT_UPDATE));
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
         }
     }
 
@@ -425,6 +403,16 @@ public class OperationService implements IOperationService {
             return false;
         }
         return true;
+    }
+
+    private void checkIdAccount(UUID idAccount) {
+        List<ValidationError> errors = new ArrayList<>();
+
+        this.checkIdAccount(idAccount, errors);
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
     }
 
     private HttpHeaders createHeaders() {

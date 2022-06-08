@@ -7,3 +7,5 @@ spring:
 
 classifier_currency_url : http://classifier-service:8080/backend/classifier/currency
 classifier_category_url : http://classifier-service:8080/backend/classifier/operation/category
+
+default_day_interval : 90

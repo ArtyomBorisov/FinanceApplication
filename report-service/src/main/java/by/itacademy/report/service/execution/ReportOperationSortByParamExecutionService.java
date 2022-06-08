@@ -66,6 +66,11 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
     private int defaultDayInterval;
 
     private final String sheetName = "ReportExpenseByDate";
+    private final String typeParam = "type";
+    private final String accountsParam = "accounts";
+    private final String categoriesParam = "categories";
+    private final String fromParam = "from";
+    private final String toParam = "to";
 
     public ReportOperationSortByParamExecutionService(ObjectMapper mapper,
                                                       UserHolder userHolder) {
@@ -74,47 +79,14 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         this.restTemplate = new RestTemplate();
     }
 
-    @Transactional
     @Override
-    public ByteArrayOutputStream execute(Map<String, Object> params) throws Exception {
-        String typeParam = "type";
-        String accountsParam = "accounts";
-        String categoriesParam = "categories";
-        String fromParam = "from";
-        String toParam = "to";
+    public ByteArrayOutputStream execute(Map<String, Object> rawParams) throws Exception {
+        Map<String, Object> checkedParams = this.checkParams(rawParams);
 
-        Object accountsObj = params.get(accountsParam);
-        Object categoriesObj = params.get(categoriesParam);
-        Object fromDateObj = params.get(fromParam);
-        Object toDateObj = params.get(toParam);
-
-        List<ValidationError> errors = new ArrayList<>();
-
-        try {
-            ReportType sort = ReportType.valueOf((String) params.get(typeParam));
-        } catch (IllegalArgumentException e) {
-            errors.add(new ValidationError(fromParam, MessageError.INVALID_FORMAT));
-        }
-
-        Set<UUID> accountsUuidSet = this.checkParamCollectionUuids(accountsObj, accountsParam, this.accountUrl, errors);
-        Set<UUID> categoriesUuidSet = this.checkParamCollectionUuids(
-                categoriesObj, categoriesParam, this.categoryBackendUrl, errors);
-
-        LocalDateTime from = this.checkParamDate(fromDateObj, LocalTime.MIN, fromParam, errors);
-        LocalDateTime to = this.checkParamDate(toDateObj, LocalTime.MAX, toParam, errors);
-
-        if (from != null && to == null) {
-            to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
-        } else if (from == null && to != null) {
-            from = LocalDateTime.of(to.minusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MIN);
-        } else if (from == null && to == null) {
-            errors.add(new ValidationError(fromParam + ", " + toParam,
-                    "Требуется передать как минимум один параметр из указанных"));
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        Set<UUID> accountsUuidSet = (Set<UUID>) checkedParams.get(this.accountsParam);
+        Set<UUID> categoriesUuidSet = (Set<UUID>) checkedParams.get(this.categoriesParam);
+        LocalDateTime from = (LocalDateTime) checkedParams.get(this.fromParam);
+        LocalDateTime to = (LocalDateTime) checkedParams.get(this.toParam);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(this.sheetName);
@@ -128,7 +100,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         sheet.setColumnWidth(6, 10 * 256);
 
         HttpHeaders headers = this.createHeaders();
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(params, headers);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(checkedParams, headers);
         List<Map<String, Object>> operationList = new ArrayList<>();
 
         try {
@@ -167,10 +139,53 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             workbook.close();
 
             return outputStream;
-
         } catch (IOException e) {
             throw new RuntimeException(MessageError.REPORT_ERROR, e);
         }
+    }
+
+    private Map<String, Object> checkParams(Map<String, Object> rawParams) {
+        Map<String, Object> checkedParams = new HashMap<>();
+
+        Object accountsObj = rawParams.get(this.accountsParam);
+        Object categoriesObj = rawParams.get(this.categoriesParam);
+        Object fromDateObj = rawParams.get(this.fromParam);
+        Object toDateObj = rawParams.get(this.toParam);
+
+        List<ValidationError> errors = new ArrayList<>();
+
+        try {
+            ReportType sort = ReportType.valueOf((String) rawParams.get(this.typeParam));
+        } catch (IllegalArgumentException e) {
+            errors.add(new ValidationError(this.typeParam, MessageError.INVALID_FORMAT));
+        }
+
+        Set<UUID> accountsUuidSet = this.checkParamCollectionUuids(accountsObj, this.accountsParam, this.accountUrl, errors);
+        Set<UUID> categoriesUuidSet = this.checkParamCollectionUuids(
+                categoriesObj, this.categoriesParam, this.categoryBackendUrl, errors);
+
+        LocalDateTime from = this.checkParamDate(fromDateObj, LocalTime.MIN, this.fromParam, errors);
+        LocalDateTime to = this.checkParamDate(toDateObj, LocalTime.MAX, this.toParam, errors);
+
+        if (from != null && to == null) {
+            to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
+        } else if (from == null && to != null) {
+            from = LocalDateTime.of(to.minusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MIN);
+        } else if (from == null && to == null) {
+            errors.add(new ValidationError(this.fromParam + ", " + this.toParam,
+                    "Требуется передать как минимум один параметр из указанных"));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
+        checkedParams.put(this.accountsParam, accountsUuidSet);
+        checkedParams.put(this.categoriesParam, categoriesUuidSet);
+        checkedParams.put(this.fromParam, from);
+        checkedParams.put(this.toParam, to);
+
+        return checkedParams;
     }
 
     private Map<UUID, String> getTitles(String url, Set<UUID> uuids) throws JsonProcessingException {

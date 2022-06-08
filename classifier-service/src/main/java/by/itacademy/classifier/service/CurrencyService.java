@@ -37,25 +37,7 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
     @Transactional
     @Override
     public Currency create(Currency currency) {
-        if (currency == null) {
-            throw new ValidationException(new ValidationError("currency", MessageError.MISSING_OBJECT));
-        }
-
-        List<ValidationError> errors = new ArrayList<>();
-
-        if (this.nullOrEmpty(currency.getTitle())) {
-            errors.add(new ValidationError("title (код валюты)", MessageError.MISSING_FIELD));
-        } else if (this.currencyRepository.findByTitle(currency.getTitle()).isPresent()) {
-            errors.add(new ValidationError("title (код валюты)", MessageError.NO_UNIQUE_FIELD));
-        }
-
-        if (this.nullOrEmpty(currency.getDescription())) {
-            errors.add(new ValidationError("description (описание валюты)", MessageError.MISSING_FIELD));
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        this.checkCurrency(currency);
 
         UUID id = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
@@ -115,17 +97,7 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         if (collectionId == null || collectionId.isEmpty()) {
             entities = this.currencyRepository.findAll(pageable);
         } else {
-            List<ValidationError> errors = new ArrayList<>();
-
-            for (UUID id : collectionId) {
-                if (!this.currencyRepository.existsCategoryEntityById(id)) {
-                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
-                }
-            }
-
-            if (!errors.isEmpty()) {
-                throw new ValidationException(errors);
-            }
+            this.checkCollectionIdCurrency(collectionId);
 
             entities = this.currencyRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
@@ -133,6 +105,42 @@ public class CurrencyService implements IClassifierService<Currency, UUID> {
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Currency.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
+    }
+
+    private void checkCurrency(Currency currency) {
+        if (currency == null) {
+            throw new ValidationException(new ValidationError("currency", MessageError.MISSING_OBJECT));
+        }
+
+        List<ValidationError> errors = new ArrayList<>();
+
+        if (this.nullOrEmpty(currency.getTitle())) {
+            errors.add(new ValidationError("title (код валюты)", MessageError.MISSING_FIELD));
+        } else if (this.currencyRepository.findByTitle(currency.getTitle()).isPresent()) {
+            errors.add(new ValidationError("title (код валюты)", MessageError.NO_UNIQUE_FIELD));
+        }
+
+        if (this.nullOrEmpty(currency.getDescription())) {
+            errors.add(new ValidationError("description (описание валюты)", MessageError.MISSING_FIELD));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+    }
+
+    private void checkCollectionIdCurrency(Collection<UUID> collection) {
+        List<ValidationError> errors = new ArrayList<>();
+
+        for (UUID id : collection) {
+            if (!this.currencyRepository.existsCategoryEntityById(id)) {
+                errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
     }
 
     private boolean nullOrEmpty(String str) {

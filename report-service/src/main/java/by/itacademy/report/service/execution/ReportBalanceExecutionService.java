@@ -50,6 +50,7 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
     private String fontName;
 
     private final String sheetName = "ReportBalance";
+    private final String accountsParam = "accounts";
 
     public ReportBalanceExecutionService(ObjectMapper mapper, UserHolder userHolder) {
         this.mapper = mapper;
@@ -57,42 +58,11 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         this.restTemplate = new RestTemplate();
     }
 
-    @Transactional
     @Override
-    public ByteArrayOutputStream execute(Map<String, Object> params) throws Exception {
-        Object obj = params.get("accounts");
-        String acc = "accounts: id счёта";
-        List<UUID> accountsUuid = null;
-        List<ValidationError> errors = new ArrayList<>();
+    public ByteArrayOutputStream execute(Map<String, Object> rawParams) throws Exception {
+        Map<String, Object> checkedParams = this.checkParams(rawParams);
 
-        HttpHeaders headers = this.createHeaders();
-
-        if (obj instanceof Collection) {
-            try {
-                accountsUuid = ((Collection<?>) obj).stream()
-                        .map(uuid -> UUID.fromString((String) uuid))
-                        .collect(Collectors.toList());
-            } catch (IllegalArgumentException e) {
-                throw new ValidationException(new ValidationError(acc, MessageError.INVALID_FORMAT));
-            }
-
-            HttpEntity<Object> entity = new HttpEntity(headers);
-
-            for (UUID id : accountsUuid) {
-                try {
-                    String url = this.accountUrl + "/" + id;
-                    this.restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-                } catch (HttpStatusCodeException e) {
-                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
-                }
-            }
-        } else if (obj != null) {
-            errors.add(new ValidationError(acc, MessageError.INVALID_FORMAT));
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        Set<UUID> accountsUuid = (Set<UUID>) checkedParams.get(this.accountsParam);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(this.sheetName);
@@ -106,6 +76,7 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         this.fillHeader(workbook, time);
 
         List<Map<String, Object>> accountsList = new ArrayList<>();
+        HttpHeaders headers = this.createHeaders();
 
         try {
             boolean lastPage = false;
@@ -154,6 +125,48 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         } catch (IOException e) {
             throw new RuntimeException(MessageError.REPORT_ERROR, e);
         }
+    }
+
+    private Map<String, Object> checkParams(Map<String, Object> rawParams) {
+        Map<String, Object> checkedParams = new HashMap<>();
+
+        Object obj = rawParams.get(this.accountsParam);
+        String acc = "accounts: id счёта";
+        Set<UUID> accountsUuid = null;
+        List<ValidationError> errors = new ArrayList<>();
+
+        HttpHeaders headers = this.createHeaders();
+
+        if (obj instanceof Collection) {
+            try {
+                accountsUuid = ((Collection<?>) obj).stream()
+                        .map(uuid -> UUID.fromString((String) uuid))
+                        .collect(Collectors.toSet());
+            } catch (IllegalArgumentException e) {
+                throw new ValidationException(new ValidationError(acc, MessageError.INVALID_FORMAT));
+            }
+
+            HttpEntity<Object> entity = new HttpEntity(headers);
+
+            for (UUID id : accountsUuid) {
+                try {
+                    String url = this.accountUrl + "/" + id;
+                    this.restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+                } catch (HttpStatusCodeException e) {
+                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+                }
+            }
+        } else if (obj != null) {
+            errors.add(new ValidationError(acc, MessageError.INVALID_FORMAT));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
+        checkedParams.put(this.accountsParam, accountsUuid);
+
+        return checkedParams;
     }
 
     private void fillHeader(XSSFWorkbook workbook,

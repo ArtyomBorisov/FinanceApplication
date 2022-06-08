@@ -60,21 +60,7 @@ public class AccountService implements IAccountService {
     public Account add(Account account) {
         String login = this.userHolder.getLoginFromContext();
 
-        List<ValidationError> errors = new ArrayList<>();
-
-        this.checkAccount(account, errors);
-
-        try {
-            if (this.accountRepository.findByUserAndTitle(login, account.getTitle()).isPresent()) {
-                errors.add(new ValidationError("title (название счёта)", MessageError.NO_UNIQUE_FIELD));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(MessageError.SQL_ERROR, e);
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        this.checkAccountWithTitleUnique(account);
 
         UUID uuid = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
@@ -128,17 +114,7 @@ public class AccountService implements IAccountService {
         if (uuids == null || uuids.isEmpty()) {
             entities = this.accountRepository.findByUserOrderByBalance_SumDesc(login, pageable);
         } else {
-            List<ValidationError> errors = new ArrayList<>();
-
-            for (UUID id : uuids) {
-                if (!this.accountRepository.existsAccountEntityByUserAndId(login, id)) {
-                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
-                }
-            }
-
-            if (!errors.isEmpty()) {
-                throw new ValidationException(errors);
-            }
+            this.checkCollectionIdAccount(uuids);
 
             entities = this.accountRepository.findByUserAndIdInOrderByBalance_SumDesc(login, uuids, pageable);
         }
@@ -152,14 +128,9 @@ public class AccountService implements IAccountService {
     public Account get(UUID id) {
         String login = this.userHolder.getLoginFromContext();
 
-        List<ValidationError> errors = new ArrayList<>();
+        this.checkIdAccount(id);
+
         AccountEntity entity;
-
-        this.checkIdAccount(id, errors);
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
 
         try {
             entity = this.accountRepository.findByUserAndId(login, id).get();
@@ -173,37 +144,7 @@ public class AccountService implements IAccountService {
     @Transactional
     @Override
     public Account update(Account account, UUID id, LocalDateTime dtUpdate) {
-        String login = this.userHolder.getLoginFromContext();
-
-        List<ValidationError> errors = new ArrayList<>();
-        AccountEntity entity = null;
-
-        this.checkAccount(account, errors);
-        this.checkIdAccount(id, errors);
-
-        if (id != null) {
-            try {
-                entity = this.accountRepository.findByUserAndId(login, id).orElse(null);
-            } catch (Exception e) {
-                throw new RuntimeException(MessageError.SQL_ERROR, e);
-            }
-        }
-
-        if (dtUpdate == null) {
-            errors.add(new ValidationError("dtUpdate (параметр последнего обновления)", MessageError.MISSING_FIELD));
-        } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
-            errors.add(new ValidationError("dtUpdate", MessageError.INVALID_DT_UPDATE));
-        }
-
-        if (entity != null && account.getTitle() != null && !account.getTitle().isEmpty()
-                && entity.getTitle().compareTo(account.getTitle()) != 0
-                && this.accountRepository.findByUserAndTitle(login, account.getTitle()).isPresent()) {
-            errors.add(new ValidationError("title (название счёта)", MessageError.NO_UNIQUE_FIELD));
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ValidationException(errors);
-        }
+        AccountEntity entity = this.get(account, id, dtUpdate);
 
         entity.setCurrency(account.getCurrency());
         entity.setDescription(account.getDescription());
@@ -236,6 +177,26 @@ public class AccountService implements IAccountService {
         }
     }
 
+    private void checkAccountWithTitleUnique(Account account) {
+        String login = this.userHolder.getLoginFromContext();
+
+        List<ValidationError> errors = new ArrayList<>();
+
+        this.checkAccount(account, errors);
+
+        try {
+            if (this.accountRepository.findByUserAndTitle(login, account.getTitle()).isPresent()) {
+                errors.add(new ValidationError("title (название счёта)", MessageError.NO_UNIQUE_FIELD));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(MessageError.SQL_ERROR, e);
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+    }
+
     private void checkIdAccount(UUID idAccount, List<ValidationError> errors) {
         String login = this.userHolder.getLoginFromContext();
 
@@ -250,6 +211,16 @@ public class AccountService implements IAccountService {
             }
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
+        }
+    }
+
+    private void checkIdAccount(UUID idAccount) {
+        List<ValidationError> errors = new ArrayList<>();
+
+        this.checkIdAccount(idAccount, errors);
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
         }
     }
 
@@ -283,5 +254,57 @@ public class AccountService implements IAccountService {
         if (account.getTitle() == null || account.getTitle().isEmpty()) {
             errors.add(new ValidationError("title (название счёта)", MessageError.MISSING_FIELD));
         }
+    }
+
+    private void checkCollectionIdAccount(Collection<UUID> collection) {
+        String login = this.userHolder.getLoginFromContext();
+
+        List<ValidationError> errors = new ArrayList<>();
+
+        for (UUID id : collection) {
+            if (!this.accountRepository.existsAccountEntityByUserAndId(login, id)) {
+                errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+    }
+
+    private AccountEntity get(Account account, UUID id, LocalDateTime dtUpdate) {
+        String login = this.userHolder.getLoginFromContext();
+
+        List<ValidationError> errors = new ArrayList<>();
+        AccountEntity entity = null;
+
+        this.checkAccount(account, errors);
+        this.checkIdAccount(id, errors);
+
+        if (id != null) {
+            try {
+                entity = this.accountRepository.findByUserAndId(login, id).orElse(null);
+            } catch (Exception e) {
+                throw new RuntimeException(MessageError.SQL_ERROR, e);
+            }
+        }
+
+        if (dtUpdate == null) {
+            errors.add(new ValidationError("dtUpdate (параметр последнего обновления)", MessageError.MISSING_FIELD));
+        } else if (entity != null && dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
+            errors.add(new ValidationError("dtUpdate", MessageError.INVALID_DT_UPDATE));
+        }
+
+        if (entity != null && account.getTitle() != null && !account.getTitle().isEmpty()
+                && entity.getTitle().compareTo(account.getTitle()) != 0
+                && this.accountRepository.findByUserAndTitle(login, account.getTitle()).isPresent()) {
+            errors.add(new ValidationError("title (название счёта)", MessageError.NO_UNIQUE_FIELD));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
+        return entity;
     }
 }

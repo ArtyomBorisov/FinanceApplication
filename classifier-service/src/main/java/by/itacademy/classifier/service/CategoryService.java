@@ -34,14 +34,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
     @Transactional
     @Override
     public Category create(Category category) {
-        if (category == null || category.getTitle() == null || category.getTitle().isEmpty()) {
-            throw new ValidationException(
-                    new ValidationError("title (название категории)", MessageError.MISSING_FIELD));
-
-        } else if (this.categoryRepository.findByTitle(category.getTitle()).isPresent()) {
-            throw new ValidationException(
-                    new ValidationError("title (название категории)", MessageError.NO_UNIQUE_FIELD));
-        }
+        this.checkCategory(category);
 
         UUID id = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
@@ -101,17 +94,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         if (collectionId == null || collectionId.isEmpty()) {
             entities = this.categoryRepository.findByOrderByTitle(pageable);
         } else {
-            List<ValidationError> errors = new ArrayList<>();
-
-            for (UUID id : collectionId) {
-                if (!this.categoryRepository.existsCategoryEntityById(id)) {
-                    errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
-                }
-            }
-
-            if (!errors.isEmpty()) {
-                throw new ValidationException(errors);
-            }
+            this.checkCollectionIdCategory(collectionId);
 
             entities = this.categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
@@ -119,5 +102,30 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         return new PageImpl<>(entities.stream()
                 .map(entity -> this.conversionService.convert(entity, Category.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
+    }
+
+    private void checkCategory(Category category) {
+        if (category == null || category.getTitle() == null || category.getTitle().isEmpty()) {
+            throw new ValidationException(
+                    new ValidationError("title (название категории)", MessageError.MISSING_FIELD));
+
+        } else if (this.categoryRepository.findByTitle(category.getTitle()).isPresent()) {
+            throw new ValidationException(
+                    new ValidationError("title (название категории)", MessageError.NO_UNIQUE_FIELD));
+        }
+    }
+
+    private void checkCollectionIdCategory(Collection<UUID> collection) {
+        List<ValidationError> errors = new ArrayList<>();
+
+        for (UUID id : collection) {
+            if (!this.categoryRepository.existsCategoryEntityById(id)) {
+                errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
     }
 }
