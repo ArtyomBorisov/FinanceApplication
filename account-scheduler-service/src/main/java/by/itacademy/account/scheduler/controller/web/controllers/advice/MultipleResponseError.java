@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.controller.web.controllers.advice;
 
-import by.itacademy.account.scheduler.service.api.ValidationError;
+import by.itacademy.account.scheduler.exception.ValidationError;
 
 import java.util.List;
 

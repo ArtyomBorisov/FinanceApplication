@@ -1,12 +1,11 @@
 package by.itacademy.account.controller.web.controllers.rest;
 
-import by.itacademy.account.model.Operation;
+import by.itacademy.account.dto.Operation;
 import by.itacademy.account.service.api.IOperationService;
-import by.itacademy.account.service.api.MessageError;
+import by.itacademy.account.exception.MessageError;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping
 @Validated
 public class OperationBackendController {
 
@@ -25,20 +24,18 @@ public class OperationBackendController {
         this.operationService = operationService;
     }
 
-    @PostMapping(value = "/backend/account/{uuid}/operation")
+    @PostMapping("/backend/account/{uuid}/operation")
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@PathVariable(name = "uuid") UUID idAccount,
                        @RequestBody Operation operation) {
-        this.operationService.add(idAccount, operation);
+        operationService.add(idAccount, operation);
     }
 
-    @PostMapping(value = "/backend/operation", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/backend/operation")
     public Page<Operation> get(@RequestBody Map<String, Object> params,
                                @RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                                @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
         Pageable pageable = Pageable.ofSize(size).withPage(page);
-        return this.operationService.getByParams(params, pageable);
+        return operationService.getByParams(params, pageable);
     }
 }

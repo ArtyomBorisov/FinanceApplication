@@ -1,7 +1,7 @@
 package by.itacademy.report.service.api;
 
-import by.itacademy.report.model.Report;
-import by.itacademy.report.model.api.ReportType;
+import by.itacademy.report.dto.Report;
+import by.itacademy.report.enums.ReportType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

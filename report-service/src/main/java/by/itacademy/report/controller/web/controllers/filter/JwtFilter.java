@@ -1,7 +1,7 @@
 package by.itacademy.report.controller.web.controllers.filter;
 
 import by.itacademy.report.controller.web.controllers.utils.JwtTokenUtil;
-import by.itacademy.report.service.api.CustomUserDetails;
+import by.itacademy.report.service.CustomUserDetails;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;

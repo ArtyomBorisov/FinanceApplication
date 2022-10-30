@@ -1,6 +1,6 @@
 package by.itacademy.account.service.api;
 
-import by.itacademy.account.model.Operation;
+import by.itacademy.account.dto.Operation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.service.api;
 
-import by.itacademy.account.scheduler.model.ScheduledOperation;
+import by.itacademy.account.scheduler.dto.ScheduledOperation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

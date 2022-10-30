@@ -1,6 +1,6 @@
 package by.itacademy.account.controller.web.controllers.advice;
 
-import by.itacademy.account.service.api.ValidationError;
+import by.itacademy.account.exception.ValidationError;
 
 import java.util.List;
 

@@ -1,9 +1,12 @@
 package by.itacademy.report.service;
 
-import by.itacademy.report.model.Report;
-import by.itacademy.report.model.ReportFile;
-import by.itacademy.report.model.api.ReportType;
-import by.itacademy.report.model.api.Status;
+import by.itacademy.report.dto.Report;
+import by.itacademy.report.dto.ReportFile;
+import by.itacademy.report.enums.ReportType;
+import by.itacademy.report.enums.Status;
+import by.itacademy.report.exception.MessageError;
+import by.itacademy.report.exception.ValidationError;
+import by.itacademy.report.exception.ValidationException;
 import by.itacademy.report.repository.api.IReportFileRepository;
 import by.itacademy.report.repository.api.IReportRepository;
 import by.itacademy.report.repository.entity.ReportEntity;
@@ -58,15 +61,15 @@ public class ReportService implements IReportService {
 
         switch (type) {
             case BALANCE:
-                this.reportExecutionService = context.getBean(ReportBalanceExecutionService.class);
+                reportExecutionService = context.getBean(ReportBalanceExecutionService.class);
                 description = "Отчёт по балансам, запрос от ";
                 break;
             case BY_DATE:
-                this.reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
+                reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
                 description = "Отчёт по операциям в разрезе дат, запрос от ";
                 break;
             case BY_CATEGORY:
-                this.reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
+                reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
                 description = "Отчёт по операциям в разрезе категорий, запрос от ";
                 break;
             default:
@@ -91,7 +94,7 @@ public class ReportService implements IReportService {
         ByteArrayOutputStream data = null;
 
         try {
-            data = this.reportExecutionService.execute(params);
+            data = reportExecutionService.execute(params);
             report.setStatus(Status.DONE);
         } catch (ValidationException e) {
             throw e;
@@ -102,10 +105,10 @@ public class ReportService implements IReportService {
         params.remove("type");
 
         try {
-            this.reportRepository.save(this.conversionService.convert(report, ReportEntity.class));
+            reportRepository.save(conversionService.convert(report, ReportEntity.class));
 
             if (data != null) {
-                this.reportFileRepository.save(this.conversionService.convert(
+                reportFileRepository.save(conversionService.convert(
                         new ReportFile(id, data, login),
                         ReportFileEntity.class));
             }
@@ -116,18 +119,18 @@ public class ReportService implements IReportService {
 
     @Override
     public Page<Report> get(Pageable pageable) {
-        String login = this.userHolder.getLoginFromContext();
+        String login = userHolder.getLoginFromContext();
 
         Page<ReportEntity> entities;
 
         try {
-            entities = this.reportRepository.findByUserOrderByDtCreateAsc(login, pageable);
+            entities = reportRepository.findByUserOrderByDtCreateAsc(login, pageable);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
-                .map(entity -> this.conversionService.convert(entity, Report.class))
+                .map(entity -> conversionService.convert(entity, Report.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
@@ -139,12 +142,12 @@ public class ReportService implements IReportService {
             ReportFileEntity fileEntity;
 
             try {
-                fileEntity = this.reportFileRepository.findByUserAndId(login, id).get();
+                fileEntity = reportFileRepository.findByUserAndId(login, id).get();
             } catch (Exception e) {
                 throw new RuntimeException(MessageError.SQL_ERROR, e);
             }
 
-            return this.conversionService.convert(fileEntity,
+            return conversionService.convert(fileEntity,
                     ReportFile.class).getData();
         } else {
             throw new ValidationException(new ValidationError("id", MessageError.ID_NOT_EXIST));
@@ -153,10 +156,10 @@ public class ReportService implements IReportService {
 
     @Override
     public boolean isReportReady(UUID id) {
-        String login = this.userHolder.getLoginFromContext();
+        String login = userHolder.getLoginFromContext();
 
         try {
-            return this.reportRepository.findByUserAndIdAndStatus(login, id, Status.DONE.toString()).isPresent();
+            return reportRepository.findByUserAndIdAndStatus(login, id, Status.DONE.toString()).isPresent();
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }

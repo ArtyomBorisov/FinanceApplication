@@ -1,8 +1,8 @@
 package by.itacademy.account.scheduler.service.scheduler;
 
 import by.itacademy.account.scheduler.controller.web.controllers.utils.JwtTokenUtil;
-import by.itacademy.account.scheduler.model.Operation;
-import by.itacademy.account.scheduler.model.ScheduledOperation;
+import by.itacademy.account.scheduler.dto.Operation;
+import by.itacademy.account.scheduler.dto.ScheduledOperation;
 import by.itacademy.account.scheduler.repository.api.IScheduledOperationRepository;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -39,13 +39,12 @@ public class CreateOperationJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         String idOperation = context.getMergedJobDataMap().getString("operation");
-        ScheduledOperation scheduledOperation = this.conversionService.convert(
-                this.scheduledOperationRepository
-                        .getById(UUID.fromString(idOperation)),
+        ScheduledOperation scheduledOperation = conversionService.convert(
+                scheduledOperationRepository.getById(UUID.fromString(idOperation)),
                 ScheduledOperation.class);
 
         Operation operation = scheduledOperation.getOperation();
-        String url = this.accountBackendUrl + "/" + operation.getAccount() + "/operation";
+        String url = accountBackendUrl + "/" + operation.getAccount() + "/operation";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -61,6 +60,6 @@ public class CreateOperationJob implements Job {
 
         HttpEntity<Operation> request = new HttpEntity<>(operationForPost, headers);
 
-        this.restTemplate.postForObject(url, request, String.class);
+        restTemplate.postForObject(url, request, String.class);
     }
 }

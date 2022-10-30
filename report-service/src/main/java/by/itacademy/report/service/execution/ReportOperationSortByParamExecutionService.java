@@ -1,12 +1,12 @@
 package by.itacademy.report.service.execution;
 
 import by.itacademy.report.controller.web.controllers.utils.JwtTokenUtil;
-import by.itacademy.report.model.api.ReportType;
+import by.itacademy.report.enums.ReportType;
 import by.itacademy.report.service.UserHolder;
 import by.itacademy.report.service.api.IReportExecutionService;
-import by.itacademy.report.service.api.MessageError;
-import by.itacademy.report.service.api.ValidationError;
-import by.itacademy.report.service.api.ValidationException;
+import by.itacademy.report.exception.MessageError;
+import by.itacademy.report.exception.ValidationError;
+import by.itacademy.report.exception.ValidationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.*;
@@ -81,15 +81,15 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
 
     @Override
     public ByteArrayOutputStream execute(Map<String, Object> rawParams) throws Exception {
-        Map<String, Object> checkedParams = this.checkParams(rawParams);
+        Map<String, Object> checkedParams = checkParams(rawParams);
 
-        Set<UUID> accountsUuidSet = (Set<UUID>) checkedParams.get(this.accountsParam);
-        Set<UUID> categoriesUuidSet = (Set<UUID>) checkedParams.get(this.categoriesParam);
-        LocalDateTime from = (LocalDateTime) checkedParams.get(this.fromParam);
-        LocalDateTime to = (LocalDateTime) checkedParams.get(this.toParam);
+        Set<UUID> accountsUuidSet = (Set<UUID>) checkedParams.get(accountsParam);
+        Set<UUID> categoriesUuidSet = (Set<UUID>) checkedParams.get(categoriesParam);
+        LocalDateTime from = (LocalDateTime) checkedParams.get(fromParam);
+        LocalDateTime to = (LocalDateTime) checkedParams.get(toParam);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet(this.sheetName);
+        Sheet sheet = workbook.createSheet(sheetName);
 
         sheet.setColumnWidth(0, 12 * 256);
         sheet.setColumnWidth(1, 12 * 256);
@@ -99,7 +99,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         sheet.setColumnWidth(5, 10 * 256);
         sheet.setColumnWidth(6, 10 * 256);
 
-        HttpHeaders headers = this.createHeaders();
+        HttpHeaders headers = createHeaders();
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(checkedParams, headers);
         List<Map<String, Object>> operationList = new ArrayList<>();
 
@@ -108,12 +108,12 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             int page = -1;
 
             while (!lastPage) {
-                String pageJson = this.restTemplate.postForObject(
-                        this.operationBackendUrl + "?page=" + ++page + "&size=20",
+                String pageJson = restTemplate.postForObject(
+                        operationBackendUrl + "?page=" + ++page + "&size=20",
                         entity,
                         String.class);
 
-                Map<String, Object> pageMap = this.mapper.readValue(pageJson, Map.class);
+                Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
 
                 operationList.addAll((List<Map<String, Object>>) pageMap.get("content"));
 
@@ -124,12 +124,12 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
                             .map(map -> UUID.fromString((String) map.get("currency")))
                             .collect(Collectors.toSet());
 
-            Map<UUID, String> currenciesTitleMap = this.getTitles(this.currencyBackendUrl, currenciesUuidSet);
-            Map<UUID, String> categoriesTitleMap = this.getTitles(this.categoryBackendUrl, categoriesUuidSet);
-            Map<UUID, String> accountsTitleMap = this.getTitles(this.accountBackendUrl, accountsUuidSet);
+            Map<UUID, String> currenciesTitleMap = getTitles(currencyBackendUrl, currenciesUuidSet);
+            Map<UUID, String> categoriesTitleMap = getTitles(categoryBackendUrl, categoriesUuidSet);
+            Map<UUID, String> accountsTitleMap = getTitles(accountBackendUrl, accountsUuidSet);
 
-            this.fillHeader(workbook);
-            this.fillSheet(workbook, operationList,
+            fillHeader(workbook);
+            fillSheet(workbook, operationList,
                     currenciesTitleMap, categoriesTitleMap, accountsTitleMap,
                     from.toLocalDate(), to.toLocalDate());
 
@@ -147,32 +147,32 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
     private Map<String, Object> checkParams(Map<String, Object> rawParams) {
         Map<String, Object> checkedParams = new HashMap<>();
 
-        Object accountsObj = rawParams.get(this.accountsParam);
-        Object categoriesObj = rawParams.get(this.categoriesParam);
-        Object fromDateObj = rawParams.get(this.fromParam);
-        Object toDateObj = rawParams.get(this.toParam);
+        Object accountsObj = rawParams.get(accountsParam);
+        Object categoriesObj = rawParams.get(categoriesParam);
+        Object fromDateObj = rawParams.get(fromParam);
+        Object toDateObj = rawParams.get(toParam);
 
         List<ValidationError> errors = new ArrayList<>();
 
         try {
-            ReportType sort = ReportType.valueOf((String) rawParams.get(this.typeParam));
+            ReportType sort = ReportType.valueOf((String) rawParams.get(typeParam));
         } catch (IllegalArgumentException e) {
-            errors.add(new ValidationError(this.typeParam, MessageError.INVALID_FORMAT));
+            errors.add(new ValidationError(typeParam, MessageError.INVALID_FORMAT));
         }
 
-        Set<UUID> accountsUuidSet = this.checkParamCollectionUuids(accountsObj, this.accountsParam, this.accountUrl, errors);
-        Set<UUID> categoriesUuidSet = this.checkParamCollectionUuids(
-                categoriesObj, this.categoriesParam, this.categoryBackendUrl, errors);
+        Set<UUID> accountsUuidSet = checkParamCollectionUuids(accountsObj, accountsParam, accountUrl, errors);
+        Set<UUID> categoriesUuidSet = checkParamCollectionUuids(
+                categoriesObj, categoriesParam, categoryBackendUrl, errors);
 
-        LocalDateTime from = this.checkParamDate(fromDateObj, LocalTime.MIN, this.fromParam, errors);
-        LocalDateTime to = this.checkParamDate(toDateObj, LocalTime.MAX, this.toParam, errors);
+        LocalDateTime from = checkParamDate(fromDateObj, LocalTime.MIN, fromParam, errors);
+        LocalDateTime to = checkParamDate(toDateObj, LocalTime.MAX, toParam, errors);
 
         if (from != null && to == null) {
-            to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
+            to = LocalDateTime.of(from.plusDays(defaultDayInterval).toLocalDate(), LocalTime.MAX);
         } else if (from == null && to != null) {
-            from = LocalDateTime.of(to.minusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MIN);
+            from = LocalDateTime.of(to.minusDays(defaultDayInterval).toLocalDate(), LocalTime.MIN);
         } else if (from == null && to == null) {
-            errors.add(new ValidationError(this.fromParam + ", " + this.toParam,
+            errors.add(new ValidationError(fromParam + ", " + toParam,
                     "Требуется передать как минимум один параметр из указанных"));
         }
 
@@ -180,10 +180,10 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             throw new ValidationException(errors);
         }
 
-        checkedParams.put(this.accountsParam, accountsUuidSet);
-        checkedParams.put(this.categoriesParam, categoriesUuidSet);
-        checkedParams.put(this.fromParam, from);
-        checkedParams.put(this.toParam, to);
+        checkedParams.put(accountsParam, accountsUuidSet);
+        checkedParams.put(categoriesParam, categoriesUuidSet);
+        checkedParams.put(fromParam, from);
+        checkedParams.put(toParam, to);
 
         return checkedParams;
     }
@@ -193,17 +193,17 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         boolean lastPage = false;
         int page = -1;
 
-        HttpHeaders headers = this.createHeaders();
+        HttpHeaders headers = createHeaders();
 
         HttpEntity<Set<UUID>> request = new HttpEntity<>(uuids, headers);
 
         while (!lastPage) {
-            String pageJson = this.restTemplate.postForObject(
+            String pageJson = restTemplate.postForObject(
                     url + "?page=" + ++page + "&size=20",
                     request,
                     String.class);
 
-            Map<String, Object> pageMap = this.mapper.readValue(pageJson, Map.class);
+            Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
 
             List<Map<String, Object>> content = (List<Map<String, Object>>) pageMap.get("content");
 
@@ -232,13 +232,13 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
                 errors.add(new ValidationError(paramName, MessageError.INVALID_FORMAT));
             }
 
-            HttpHeaders headers = this.createHeaders();
+            HttpHeaders headers = createHeaders();
             HttpEntity<Object> entity = new HttpEntity(headers);
 
             for (UUID id : set) {
                 try {
                     String urlWithId = url + "/" + id;
-                    this.restTemplate.exchange(urlWithId, HttpMethod.GET, entity, String.class);
+                    restTemplate.exchange(urlWithId, HttpMethod.GET, entity, String.class);
                 } catch (HttpStatusCodeException e) {
                     errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
                 }
@@ -270,27 +270,27 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
 
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
 
-        XSSFFont fontHeaderRow = this.createFont(workbook, this.fontName, (short) 14, true, false);
-        XSSFFont fontHeaderSheet = this.createFont(workbook, this.fontName, (short) 12, false, true);
+        XSSFFont fontHeaderRow = createFont(workbook, fontName, (short) 14, true, false);
+        XSSFFont fontHeaderSheet = createFont(workbook, fontName, (short) 12, false, true);
 
-        CellStyle cellStyleHeaderRow = this.createCellStyle(workbook, fontHeaderRow, true, false);
+        CellStyle cellStyleHeaderRow = createCellStyle(workbook, fontHeaderRow, true, false);
         cellStyleHeaderRow.setAlignment(HorizontalAlignment.CENTER);
 
-        CellStyle cellStyleHeaderSheet = this.createCellStyle(workbook, fontHeaderSheet, true, true);
+        CellStyle cellStyleHeaderSheet = createCellStyle(workbook, fontHeaderSheet, true, true);
 
         Row rowTitles = sheet.createRow(4);
 
         int numberCell = -1;
 
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Дата");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Время");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Счёт");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Категория");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Описание операции");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Сумма");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Валюта");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Дата");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Время");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Счёт");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Категория");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Описание операции");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Сумма");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Валюта");
 
-        this.createCell(rowHeader, 0, cellStyleHeaderRow, "Отчёт по операциям");
+        createCell(rowHeader, 0, cellStyleHeaderRow, "Отчёт по операциям");
     }
 
     private void fillSheet(XSSFWorkbook workbook,
@@ -300,7 +300,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
                            Map<UUID, String> accountTitleMap,
                            LocalDate from,
                            LocalDate to) throws JsonProcessingException {
-        Sheet sheet = workbook.getSheet(this.sheetName);
+        Sheet sheet = workbook.getSheet(sheetName);
         String pattern = "dd.MM.yyyy";
 
         Row rowHeader1 = sheet.createRow(1);
@@ -311,29 +311,29 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
         sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 6));
         sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 6));
 
-        XSSFFont fontSheet = this.createFont(workbook, this.fontName, (short) 11, false, false);
+        XSSFFont fontSheet = createFont(workbook, fontName, (short) 11, false, false);
 
-        CellStyle cellStyleRows = this.createCellStyle(workbook, fontSheet, true, false);
-        CellStyle cellStyleSheet = this.createCellStyle(workbook, fontSheet, true, true);
+        CellStyle cellStyleRows = createCellStyle(workbook, fontSheet, true, false);
+        CellStyle cellStyleSheet = createCellStyle(workbook, fontSheet, true, true);
 
-        CellStyle cellStyleSheetRed = this.createCellStyle(workbook, fontSheet, true, true);
+        CellStyle cellStyleSheetRed = createCellStyle(workbook, fontSheet, true, true);
         cellStyleSheetRed.setFillForegroundColor(IndexedColors.LAVENDER.getIndex());
         cellStyleSheetRed.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        CellStyle cellStyleSheetGreen = this.createCellStyle(workbook, fontSheet, true, true);
+        CellStyle cellStyleSheetGreen = createCellStyle(workbook, fontSheet, true, true);
         cellStyleSheetGreen.setFillForegroundColor(IndexedColors.LIME.getIndex());
         cellStyleSheetGreen.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        this.createCell(rowHeader1, 0, cellStyleRows,
+        createCell(rowHeader1, 0, cellStyleRows,
                 "Даты с " + from.format(DateTimeFormatter.ofPattern(pattern))
                         + " по " + to.format(DateTimeFormatter.ofPattern(pattern)));
 
         String temp = accountTitleMap.values().toString();
-        this.createCell(rowHeader2, 0, cellStyleRows,
+        createCell(rowHeader2, 0, cellStyleRows,
                 "Счета: " + temp.substring(1, temp.length() - 1));
 
         temp = categoryTitleMap.values().toString();
-        this.createCell(rowHeader3, 0, cellStyleRows,
+        createCell(rowHeader3, 0, cellStyleRows,
                 "Категории: " + temp.substring(1, temp.length() - 1));
 
         int numberRow = sheet.getLastRowNum();
@@ -341,23 +341,23 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
             Row row = sheet.createRow(++numberRow);
 
             int numberCell = -1;
-            this.createCell(row, ++numberCell, cellStyleSheet,
-                    this.longToLDT(((Number) operation.get("date")).longValue())
+            createCell(row, ++numberCell, cellStyleSheet,
+                    longToLDT(((Number) operation.get("date")).longValue())
                             .toLocalDate().format(DateTimeFormatter.ofPattern(pattern)));
 
-            this.createCell(row, ++numberCell, cellStyleSheet,
-                    this.longToLDT(((Number) operation.get("date")).longValue())
+            createCell(row, ++numberCell, cellStyleSheet,
+                    longToLDT(((Number) operation.get("date")).longValue())
                             .toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
 
 
             Map<String, Object> map = (Map<String, Object>) operation.get("account");
-            this.createCell(row, ++numberCell, cellStyleSheet,
+            createCell(row, ++numberCell, cellStyleSheet,
                     (String) map.get("title"));
 
-            this.createCell(row, ++numberCell, cellStyleSheet,
+            createCell(row, ++numberCell, cellStyleSheet,
                     categoryTitleMap.get(UUID.fromString((String) operation.get("category"))));
 
-            this.createCell(row, ++numberCell, cellStyleSheet,
+            createCell(row, ++numberCell, cellStyleSheet,
                     operation.get("description") == null ? "" : operation.get("description").toString());
 
             Cell value = row.createCell(++numberCell);
@@ -369,7 +369,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
                 value.setCellStyle(cellStyleSheetGreen);
             }
 
-            this.createCell(row, ++numberCell, cellStyleSheet,
+            createCell(row, ++numberCell, cellStyleSheet,
                     currencyTitleMap.get(UUID.fromString((String) operation.get("currency"))));
         }
     }
@@ -381,7 +381,7 @@ public class ReportOperationSortByParamExecutionService implements IReportExecut
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
+        String token = JwtTokenUtil.generateAccessToken(userHolder.getUser());
         headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
 
         return headers;

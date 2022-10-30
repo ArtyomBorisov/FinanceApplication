@@ -1,9 +1,12 @@
 package by.itacademy.account.scheduler.service;
 
 import by.itacademy.account.scheduler.controller.web.controllers.utils.JwtTokenUtil;
-import by.itacademy.account.scheduler.model.Operation;
-import by.itacademy.account.scheduler.model.Schedule;
-import by.itacademy.account.scheduler.model.ScheduledOperation;
+import by.itacademy.account.scheduler.dto.Operation;
+import by.itacademy.account.scheduler.dto.Schedule;
+import by.itacademy.account.scheduler.dto.ScheduledOperation;
+import by.itacademy.account.scheduler.exception.MessageError;
+import by.itacademy.account.scheduler.exception.ValidationError;
+import by.itacademy.account.scheduler.exception.ValidationException;
 import by.itacademy.account.scheduler.repository.api.IScheduledOperationRepository;
 import by.itacademy.account.scheduler.repository.entity.ScheduledOperationEntity;
 import by.itacademy.account.scheduler.service.api.*;
@@ -68,8 +71,8 @@ public class ScheduledOperationService implements IScheduledOperationService {
         Operation operation = scheduledOperation.getOperation();
         Schedule schedule = scheduledOperation.getSchedule();
 
-        this.checkOperation(operation, errors);
-        this.checkSchedule(schedule, errors);
+        checkOperation(operation, errors);
+        checkSchedule(schedule, errors);
 
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
@@ -85,60 +88,60 @@ public class ScheduledOperationService implements IScheduledOperationService {
 
         ScheduledOperationEntity save;
         try {
-            save = this.scheduledOperationRepository.save(
-                    this.conversionService.convert(scheduledOperation, ScheduledOperationEntity.class));
+            save = scheduledOperationRepository.save(
+                    conversionService.convert(scheduledOperation, ScheduledOperationEntity.class));
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        this.schedulerService.addScheduledOperation(schedule, id);
+        schedulerService.addScheduledOperation(schedule, id);
 
-        return this.conversionService.convert(save, ScheduledOperation.class);
+        return conversionService.convert(save, ScheduledOperation.class);
     }
 
     @Override
     public ScheduledOperation get(UUID id) {
-        String login = this.userHolder.getLoginFromContext();
+        String login = userHolder.getLoginFromContext();
 
         List<ValidationError> errors = new ArrayList<>();
         ScheduledOperationEntity entity;
 
-        this.checkIdScheduledOperation(id, errors);
+        checkIdScheduledOperation(id, errors);
 
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
 
         try {
-            entity = this.scheduledOperationRepository.findByUserAndId(login, id).get();
+            entity = scheduledOperationRepository.findByUserAndId(login, id).get();
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        return this.conversionService.convert(entity, ScheduledOperation.class);
+        return conversionService.convert(entity, ScheduledOperation.class);
     }
 
     @Override
     public Page<ScheduledOperation> get(Pageable pageable) {
-        String login = this.userHolder.getLoginFromContext();
+        String login = userHolder.getLoginFromContext();
 
         Page<ScheduledOperationEntity> entities;
 
         try {
-            entities = this.scheduledOperationRepository.findByUserOrderByDtCreateAsc(login, pageable);
+            entities = scheduledOperationRepository.findByUserOrderByDtCreateAsc(login, pageable);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
-                .map(entity -> this.conversionService.convert(entity, ScheduledOperation.class))
+                .map(entity -> conversionService.convert(entity, ScheduledOperation.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Transactional
     @Override
     public ScheduledOperation update(ScheduledOperation scheduledOperation, UUID id, LocalDateTime dtUpdate) {
-        String login = this.userHolder.getLoginFromContext();
+        String login = userHolder.getLoginFromContext();
 
         if (scheduledOperation == null) {
             throw new ValidationException(new ValidationError("scheduledOperation", MessageError.MISSING_OBJECT));
@@ -149,13 +152,13 @@ public class ScheduledOperationService implements IScheduledOperationService {
         Operation operation = scheduledOperation.getOperation();
         Schedule schedule = scheduledOperation.getSchedule();
 
-        this.checkIdScheduledOperation(id, errors);
-        this.checkOperation(operation, errors);
-        this.checkSchedule(schedule, errors);
+        checkIdScheduledOperation(id, errors);
+        checkOperation(operation, errors);
+        checkSchedule(schedule, errors);
 
         if (id != null){
             try {
-                entity = this.scheduledOperationRepository.findByUserAndId(login, id).orElse(null);
+                entity = scheduledOperationRepository.findByUserAndId(login, id).orElse(null);
             } catch (Exception e) {
                 throw new RuntimeException(MessageError.SQL_ERROR, e);
             }
@@ -183,15 +186,15 @@ public class ScheduledOperationService implements IScheduledOperationService {
 
         ScheduledOperationEntity save;
         try {
-            save = this.scheduledOperationRepository.save(entity);
+            save = scheduledOperationRepository.save(entity);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        this.schedulerService.deleteScheduledOperation(id);
-        this.schedulerService.addScheduledOperation(schedule, id);
+        schedulerService.deleteScheduledOperation(id);
+        schedulerService.addScheduledOperation(schedule, id);
 
-        return this.conversionService.convert(save, ScheduledOperation.class);
+        return conversionService.convert(save, ScheduledOperation.class);
     }
 
     private void checkIdScheduledOperation(UUID idScheduledOperation, List<ValidationError> errors) {
@@ -239,9 +242,9 @@ public class ScheduledOperationService implements IScheduledOperationService {
         String idCategory = "category (id категории)";
         String idCurrency = "currency (id валюты)";
 
-        String currencyClassifierUrl = this.currencyUrl + "/" + operation.getCurrency();
-        String categoryClassifierUrl = this.categoryUrl + "/" + operation.getCategory();
-        String accountServiceUrl = this.accountUrl + "/" + operation.getAccount();
+        String currencyClassifierUrl = currencyUrl + "/" + operation.getCurrency();
+        String categoryClassifierUrl = categoryUrl + "/" + operation.getCategory();
+        String accountServiceUrl = accountUrl + "/" + operation.getAccount();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -253,7 +256,7 @@ public class ScheduledOperationService implements IScheduledOperationService {
             errors.add(new ValidationError(idAccount, MessageError.MISSING_FIELD));
         } else {
             try {
-                this.restTemplate.exchange(accountServiceUrl, HttpMethod.GET, entity, String.class);
+                restTemplate.exchange(accountServiceUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
                 errors.add(new ValidationError(idAccount, MessageError.ID_NOT_EXIST));
             }
@@ -263,7 +266,7 @@ public class ScheduledOperationService implements IScheduledOperationService {
             errors.add(new ValidationError(idCategory, MessageError.MISSING_FIELD));
         } else {
             try {
-                this.restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
+                restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
                 errors.add(new ValidationError(idCategory, MessageError.ID_NOT_EXIST));
             }
@@ -277,7 +280,7 @@ public class ScheduledOperationService implements IScheduledOperationService {
             errors.add(new ValidationError(idCurrency, MessageError.MISSING_FIELD));
         } else {
             try {
-                this.restTemplate.exchange(currencyClassifierUrl, HttpMethod.GET, entity, String.class);
+                restTemplate.exchange(currencyClassifierUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
                 errors.add(new ValidationError(idCurrency, MessageError.ID_NOT_EXIST));
             }

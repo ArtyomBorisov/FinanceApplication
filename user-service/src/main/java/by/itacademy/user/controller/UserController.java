@@ -15,16 +15,14 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping(value = "/reg")
+    @PostMapping("/reg")
     @ResponseStatus(HttpStatus.CREATED)
     public void registration(@RequestBody LoginDto loginDto){
-        this.userService.registration(loginDto);
+        userService.registration(loginDto);
     }
 
-    @PostMapping(value = "/login")
-    @ResponseBody
-    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/login")
     public String login(@RequestBody LoginDto loginDto){
-        return this.userService.authorization(loginDto);
+        return userService.authorization(loginDto);
     }
 }

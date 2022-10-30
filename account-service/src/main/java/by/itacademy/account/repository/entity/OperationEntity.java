@@ -8,7 +8,7 @@ import java.util.UUID;
 @Table(name = "operation", schema = "app")
 public class OperationEntity {
     @Id
-    @Column(name = "id", updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
     @Column(name = "dt_create", nullable = false, updatable = false)
@@ -18,19 +18,18 @@ public class OperationEntity {
     @Column(name = "dt_update", nullable = false)
     private LocalDateTime dtUpdate;
 
-    @Column(name = "date", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime date;
 
-    @Column(name = "description")
     private String description;
 
-    @Column(name = "category", nullable = false)
+    @Column(nullable = false)
     private UUID category;
 
-    @Column(name = "value", nullable = false)
+    @Column(nullable = false)
     private double value;
 
-    @Column(name = "currency", nullable = false)
+    @Column(nullable = false)
     private UUID currency;
 
     @ManyToOne

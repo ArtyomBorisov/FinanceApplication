@@ -1,6 +1,6 @@
 package by.itacademy.report.repository.entity;
 
-import by.itacademy.report.repository.api.converter.MapToStringConverter;
+import by.itacademy.report.utils.converter.MapToStringConverter;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -11,7 +11,6 @@ import java.util.UUID;
 @Table(name = "report", schema = "app")
 public class ReportEntity {
     @Id
-    @Column(name = "id")
     private UUID id;
 
     @Column(name = "dt_create")
@@ -21,17 +20,11 @@ public class ReportEntity {
     @Column(name = "dt_update")
     private LocalDateTime dtUpdate;
 
-    @Column(name = "status")
     private String status;
-
-    @Column(name = "type")
     private String type;
-
-    @Column(name = "description")
     private String description;
 
     @Convert(converter = MapToStringConverter.class)
-    @Column(name = "params")
     private Map<String, Object> params;
 
     @Column(name = "\"user\"", nullable = false)

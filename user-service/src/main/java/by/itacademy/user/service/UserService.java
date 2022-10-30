@@ -3,9 +3,9 @@ package by.itacademy.user.service;
 import by.itacademy.user.controller.dto.LoginDto;
 import by.itacademy.user.controller.utils.JwtTokenUtil;
 import by.itacademy.user.service.api.IUserService;
-import by.itacademy.user.service.api.UserRole;
-import by.itacademy.user.service.api.ValidationError;
-import by.itacademy.user.service.api.ValidationException;
+import by.itacademy.user.enums.UserRole;
+import by.itacademy.user.exception.ValidationError;
+import by.itacademy.user.exception.ValidationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -33,7 +33,7 @@ public class UserService implements IUserService {
     @Override
     @Transactional
     public void registration(LoginDto loginDto) {
-        this.checkLoginDto(loginDto);
+        checkLoginDto(loginDto);
 
         String login = loginDto.getLogin();
 
@@ -41,7 +41,7 @@ public class UserService implements IUserService {
             throw new ValidationException("Логин недоступен для регистрации");
         }
 
-        this.manager.createUser(User.builder()
+        manager.createUser(User.builder()
                 .username(login)
                 .password(encoder.encode(loginDto.getPassword()))
                 .roles(UserRole.USER.toString())
@@ -51,7 +51,7 @@ public class UserService implements IUserService {
     @Override
     public String authorization(LoginDto loginDto) {
         String error = "Пароль или логин неверный (ые)";
-        this.checkLoginDto(loginDto);
+        checkLoginDto(loginDto);
 
         UserDetails details;
         try {

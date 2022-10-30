@@ -1,6 +1,6 @@
 package by.itacademy.mail.service;
 
-import by.itacademy.mail.controller.utils.JwtTokenUtil;
+import by.itacademy.mail.controller.web.controllers.utils.JwtTokenUtil;
 import by.itacademy.mail.service.api.IMailService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -11,7 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -19,7 +19,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.util.UUID;
 
-@Component
+@Service
 public class MailService implements IMailService {
 
     private final RestTemplate restTemplate;
@@ -41,30 +41,30 @@ public class MailService implements IMailService {
     @Override
     public void sendReport(UUID id) {
         try {
-            String email = this.userHolder.getLoginFromContext();
+            String email = userHolder.getLoginFromContext();
 
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-            helper.setFrom(this.from);
+            helper.setFrom(from);
             helper.setTo(email);
             helper.setSubject("Отчёт " + id);
             helper.setText("");
 
-            String url = this.reportUrl.replaceFirst("uuid", id.toString());
+            String url = reportUrl.replaceFirst("uuid", id.toString());
 
             HttpHeaders headers = new HttpHeaders();
-            String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
+            String token = JwtTokenUtil.generateAccessToken(userHolder.getUser());
             headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
             HttpEntity<Object> entity = new HttpEntity<>(headers);
 
-            this.restTemplate.exchange(url, HttpMethod.HEAD, entity, String.class);
+            restTemplate.exchange(url, HttpMethod.HEAD, entity, String.class);
 
             headers.setContentType(MediaType.TEXT_PLAIN);
             entity = new HttpEntity<>(headers);
 
             helper.addAttachment(id.toString() + ".xlsx",
-                    this.restTemplate.exchange(url, HttpMethod.GET, entity, ByteArrayResource.class).getBody());
+                    restTemplate.exchange(url, HttpMethod.GET, entity, ByteArrayResource.class).getBody());
 
             emailSender.send(message);
         } catch (MailSendException e) {

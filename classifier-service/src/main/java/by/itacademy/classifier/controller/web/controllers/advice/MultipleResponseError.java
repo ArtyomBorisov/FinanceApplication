@@ -1,6 +1,6 @@
 package by.itacademy.classifier.controller.web.controllers.advice;
 
-import by.itacademy.classifier.service.api.ValidationError;
+import by.itacademy.classifier.exception.ValidationError;
 
 import java.util.List;
 

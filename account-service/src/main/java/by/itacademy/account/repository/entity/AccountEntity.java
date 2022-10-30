@@ -8,7 +8,6 @@ import java.util.UUID;
 @Table(name = "account", schema = "app", uniqueConstraints = @UniqueConstraint(columnNames = {"title", "user"}))
 public class AccountEntity {
     @Id
-    @Column(name = "id")
     private UUID id;
 
     @Column(name = "dt_create", nullable = false, updatable = false)
@@ -18,20 +17,19 @@ public class AccountEntity {
     @Column(name = "dt_update", nullable = false)
     private LocalDateTime dtUpdate;
 
-    @Column(name = "title", nullable = false)
+    @Column(nullable = false)
     private String title;
 
-    @Column(name = "description")
     private String description;
 
     @OneToOne
-    @JoinColumn(name = "balance", nullable = false)
+    @JoinColumn(nullable = false)
     private BalanceEntity balance;
 
-    @Column(name = "type", nullable = false)
+    @Column(nullable = false)
     private String type;
 
-    @Column(name = "currency", nullable = false)
+    @Column(nullable = false)
     private UUID currency;
 
     @Column(name = "\"user\"", nullable = false)

@@ -8,14 +8,12 @@ import java.util.UUID;
 @Table(name = "balance", schema = "app")
 public class BalanceEntity {
     @Id
-    @Column(name = "id")
     private UUID id;
 
     @Version
     @Column(name = "dt_update", nullable = false)
     private LocalDateTime dtUpdate;
 
-    @Column(name = "sum")
     private double sum;
 
     public UUID getId() {

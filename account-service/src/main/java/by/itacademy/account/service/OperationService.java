@@ -1,10 +1,13 @@
 package by.itacademy.account.service;
 
 import by.itacademy.account.controller.web.controllers.utils.JwtTokenUtil;
-import by.itacademy.account.model.Account;
-import by.itacademy.account.model.Operation;
+import by.itacademy.account.dto.Account;
+import by.itacademy.account.dto.Operation;
+import by.itacademy.account.exception.MessageError;
+import by.itacademy.account.exception.ValidationError;
+import by.itacademy.account.exception.ValidationException;
 import by.itacademy.account.repository.api.IOperationRepository;
-import by.itacademy.account.repository.api.ParamSort;
+import by.itacademy.account.enums.ParamSort;
 import by.itacademy.account.repository.entity.AccountEntity;
 import by.itacademy.account.repository.entity.OperationEntity;
 import by.itacademy.account.service.api.*;
@@ -65,8 +68,8 @@ public class OperationService implements IOperationService {
     public Operation add(UUID idAccount, Operation operation) {
         List<ValidationError> errors = new ArrayList<>();
 
-        this.checkOperation(operation, errors);
-        this.checkIdAccount(idAccount, errors);
+        checkOperation(operation, errors);
+        checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
@@ -79,8 +82,8 @@ public class OperationService implements IOperationService {
         UUID idOperation = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
 
-        Account account = this.accountService.get(idAccount);
-        AccountEntity accountEntity = this.conversionService.convert(account, AccountEntity.class);
+        Account account = accountService.get(idAccount);
+        AccountEntity accountEntity = conversionService.convert(account, AccountEntity.class);
 
         operation.setId(idOperation);
         operation.setDtCreate(now);
@@ -89,49 +92,49 @@ public class OperationService implements IOperationService {
 
         OperationEntity save;
         try {
-            save = this.operationRepository.save(
-                    this.conversionService.convert(operation, OperationEntity.class).setAccountEntity(accountEntity)
+            save = operationRepository.save(
+                    conversionService.convert(operation, OperationEntity.class).setAccountEntity(accountEntity)
             );
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        return this.conversionService.convert(save, Operation.class).setAccount(account);
+        return conversionService.convert(save, Operation.class).setAccount(account);
     }
 
     @Override
     public Page<Operation> get(UUID idAccount, Pageable pageable) {
-        this.checkIdAccount(idAccount);
+        checkIdAccount(idAccount);
 
         Page<OperationEntity> entities;
 
         try {
-            entities = this.operationRepository.findByAccountEntity_IdOrderByDtCreateAsc(idAccount, pageable);
+            entities = operationRepository.findByAccountEntity_IdOrderByDtCreateAsc(idAccount, pageable);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
-                .map(entity -> this.conversionService.convert(entity, Operation.class))
+                .map(entity -> conversionService.convert(entity, Operation.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
     @Override
     public Page<Operation> getByParams(Map<String, Object> rawParams, Pageable pageable) {
-        String login = this.userHolder.getLoginFromContext();
+        String login = userHolder.getLoginFromContext();
 
-        Map<String, Object> checkedParams = this.checkParams(rawParams);
+        Map<String, Object> checkedParams = checkParams(rawParams);
 
-        List<Sort.Order> orders = (List<Sort.Order>) checkedParams.get(this.typeParam);
-        Set<UUID> accountsUuidSet = (Set<UUID>) checkedParams.get(this.accountsParam);
-        Set<UUID> categoriesUuidSet = (Set<UUID>) checkedParams.get(this.categoriesParam);
-        LocalDateTime from = (LocalDateTime) checkedParams.get(this.fromParam);
-        LocalDateTime to = (LocalDateTime) checkedParams.get(this.toParam);
+        List<Sort.Order> orders = (List<Sort.Order>) checkedParams.get(typeParam);
+        Set<UUID> accountsUuidSet = (Set<UUID>) checkedParams.get(accountsParam);
+        Set<UUID> categoriesUuidSet = (Set<UUID>) checkedParams.get(categoriesParam);
+        LocalDateTime from = (LocalDateTime) checkedParams.get(fromParam);
+        LocalDateTime to = (LocalDateTime) checkedParams.get(toParam);
 
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(orders));
 
-        Page<OperationEntity> entities = this.operationRepository.findAll(Specification
+        Page<OperationEntity> entities = operationRepository.findAll(Specification
                         .where(IOperationRepository.hasUser(login))
                         .and(IOperationRepository.accountsIdIn(accountsUuidSet))
                         .and(IOperationRepository.categoriesIdIn(categoriesUuidSet))
@@ -140,8 +143,8 @@ public class OperationService implements IOperationService {
                 sorted);
 
         return new PageImpl<>(entities.stream()
-                .map(operationEntity -> this.conversionService.convert(operationEntity, Operation.class)
-                        .setAccount(this.accountService.get(operationEntity.getAccountEntity().getId())))
+                .map(operationEntity -> conversionService.convert(operationEntity, Operation.class)
+                        .setAccount(accountService.get(operationEntity.getAccountEntity().getId())))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
@@ -161,15 +164,15 @@ public class OperationService implements IOperationService {
             throw new ValidationException(new ValidationError("id операции", MessageError.ID_NOT_EXIST));
         }
 
-        return this.conversionService.convert(entity, Operation.class)
-                .setAccount(this.accountService.get(idAccount));
+        return conversionService.convert(entity, Operation.class)
+                .setAccount(accountService.get(idAccount));
     }
 
     @Transactional
     @Override
     public Operation update(Operation operation, UUID idAccount, UUID idOperation, LocalDateTime dtUpdate) {
-        this.checkOperation(operation);
-        OperationEntity entity = this.get(idAccount, idOperation, dtUpdate);
+        checkOperation(operation);
+        OperationEntity entity = get(idAccount, idOperation, dtUpdate);
 
         if (operation.getDate() == null) {
             operation.setDate(LocalDateTime.now());
@@ -184,22 +187,22 @@ public class OperationService implements IOperationService {
         OperationEntity save = null;
 
         try {
-            save = this.operationRepository.save(entity);
+            save = operationRepository.save(entity);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        return this.conversionService.convert(save, Operation.class)
-                .setAccount(this.accountService.get(idAccount));
+        return conversionService.convert(save, Operation.class)
+                .setAccount(accountService.get(idAccount));
     }
 
     @Transactional
     @Override
     public void delete(UUID idAccount, UUID idOperation, LocalDateTime dtUpdate) {
-        OperationEntity entity = this.get(idAccount, idOperation, dtUpdate);
+        OperationEntity entity = get(idAccount, idOperation, dtUpdate);
 
         try {
-            this.operationRepository.delete(entity);
+            operationRepository.delete(entity);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
@@ -208,11 +211,11 @@ public class OperationService implements IOperationService {
     private Map<String, Object> checkParams(Map<String, Object> rawParams) {
         Map<String, Object> checkedParams = new HashMap<>();
 
-        Object typeObj = rawParams.get(this.typeParam);
-        Object accountsObj = rawParams.get(this.accountsParam);
-        Object categoriesObj = rawParams.get(this.categoriesParam);
-        Object fromDateObj = rawParams.get(this.fromParam);
-        Object toDateObj = rawParams.get(this.toParam);
+        Object typeObj = rawParams.get(typeParam);
+        Object accountsObj = rawParams.get(accountsParam);
+        Object categoriesObj = rawParams.get(categoriesParam);
+        Object fromDateObj = rawParams.get(fromParam);
+        Object toDateObj = rawParams.get(toParam);
 
         List<Sort.Order> orders = new ArrayList<>();
         List<ValidationError> errors = new ArrayList<>();
@@ -266,7 +269,7 @@ public class OperationService implements IOperationService {
 
                 HttpEntity<Object> entity = new HttpEntity<>(this.createHeaders());
                 for (UUID id : categoriesUuidSet) {
-                    this.checkCategoryId(id, entity, errors);
+                    checkCategoryId(id, entity, errors);
                 }
             } else if (categoriesObj != null) {
                 errors.add(new ValidationError(categoriesParam, MessageError.INVALID_FORMAT));
@@ -275,15 +278,15 @@ public class OperationService implements IOperationService {
             errors.add(new ValidationError("uuid", MessageError.INVALID_FORMAT));
         }
 
-        LocalDateTime from = this.checkParamDate(fromDateObj, LocalTime.MIN, this.fromParam, errors);
-        LocalDateTime to = this.checkParamDate(toDateObj, LocalTime.MAX, this.toParam, errors);
+        LocalDateTime from = checkParamDate(fromDateObj, LocalTime.MIN, fromParam, errors);
+        LocalDateTime to = checkParamDate(toDateObj, LocalTime.MAX, toParam, errors);
 
         if (from != null && to == null) {
-            to = LocalDateTime.of(from.plusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MAX);
+            to = LocalDateTime.of(from.plusDays(defaultDayInterval).toLocalDate(), LocalTime.MAX);
         } else if (from == null && to != null) {
-            from = LocalDateTime.of(to.minusDays(this.defaultDayInterval).toLocalDate(), LocalTime.MIN);
+            from = LocalDateTime.of(to.minusDays(defaultDayInterval).toLocalDate(), LocalTime.MIN);
         } else if (from == null && to == null) {
-            errors.add(new ValidationError(this.fromParam + ", " + this.toParam,
+            errors.add(new ValidationError(fromParam + ", " + toParam,
                     "Требуется передать как минимум один параметр из указанных"));
         }
 
@@ -291,11 +294,11 @@ public class OperationService implements IOperationService {
             throw new ValidationException(errors);
         }
 
-        checkedParams.put(this.typeParam, orders);
-        checkedParams.put(this.accountsParam, accountsUuidSet);
-        checkedParams.put(this.categoriesParam, categoriesUuidSet);
-        checkedParams.put(this.fromParam, from);
-        checkedParams.put(this.toParam, to);
+        checkedParams.put(typeParam, orders);
+        checkedParams.put(accountsParam, accountsUuidSet);
+        checkedParams.put(categoriesParam, categoriesUuidSet);
+        checkedParams.put(fromParam, from);
+        checkedParams.put(toParam, to);
 
         return checkedParams;
     }
@@ -317,13 +320,13 @@ public class OperationService implements IOperationService {
         List<ValidationError> errors = new ArrayList<>();
         OperationEntity entity = null;
 
-        if (this.checkIdAccount(idAccount, errors)) {
+        if (checkIdAccount(idAccount, errors)) {
             if (idOperation == null) {
                 errors.add(new ValidationError("id operation", MessageError.MISSING_FIELD));
             } else {
                 try {
                     if (idAccount != null
-                            && this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
+                            && operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).isEmpty()) {
 
                         errors.add(new ValidationError("id operation", MessageError.ID_NOT_EXIST));
                     }
@@ -334,7 +337,7 @@ public class OperationService implements IOperationService {
         }
 
         try {
-            entity = this.operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
+            entity = operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount).orElse(null);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
@@ -358,15 +361,15 @@ public class OperationService implements IOperationService {
             return;
         }
 
-        String currencyClassifierUrl = this.currencyUrl + "/" + operation.getCurrency();
+        String currencyClassifierUrl = currencyUrl + "/" + operation.getCurrency();
 
-        HttpHeaders headers = this.createHeaders();
+        HttpHeaders headers = createHeaders();
         HttpEntity<Object> entity = new HttpEntity<>(headers);
 
         if (operation.getCategory() == null) {
             errors.add(new ValidationError("category (категория)", MessageError.MISSING_FIELD));
         } else {
-            this.checkCategoryId(operation.getCategory(), entity, errors);
+            checkCategoryId(operation.getCategory(), entity, errors);
         }
 
         if (operation.getValue() == 0) {
@@ -377,7 +380,7 @@ public class OperationService implements IOperationService {
             errors.add(new ValidationError("currency (валюта)", MessageError.MISSING_FIELD));
         } else {
             try {
-                this.restTemplate.exchange(currencyClassifierUrl, HttpMethod.GET, entity, String.class);
+                restTemplate.exchange(currencyClassifierUrl, HttpMethod.GET, entity, String.class);
             } catch (HttpStatusCodeException e) {
                 errors.add(new ValidationError("id currency (id валюты)", MessageError.ID_NOT_EXIST));
             }
@@ -387,7 +390,7 @@ public class OperationService implements IOperationService {
     private void checkOperation(Operation operation) {
         List<ValidationError> errors = new ArrayList<>();
 
-        this.checkOperation(operation, errors);
+        checkOperation(operation, errors);
 
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
@@ -398,7 +401,7 @@ public class OperationService implements IOperationService {
         if (idAccount == null) {
             errors.add(new ValidationError("id account (id счёта)", MessageError.MISSING_FIELD));
             return false;
-        } else if (!this.accountService.isAccountExist(idAccount)) {
+        } else if (!accountService.isAccountExist(idAccount)) {
             errors.add(new ValidationError("id account (id счёта)", MessageError.ID_NOT_EXIST));
             return false;
         }
@@ -408,7 +411,7 @@ public class OperationService implements IOperationService {
     private void checkIdAccount(UUID idAccount) {
         List<ValidationError> errors = new ArrayList<>();
 
-        this.checkIdAccount(idAccount, errors);
+        checkIdAccount(idAccount, errors);
 
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
@@ -418,24 +421,20 @@ public class OperationService implements IOperationService {
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        String token = JwtTokenUtil.generateAccessToken(this.userHolder.getUser());
+        String token = JwtTokenUtil.generateAccessToken(userHolder.getUser());
         headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         return headers;
     }
 
     private boolean checkCategoryId(UUID id, HttpEntity<Object> entity, List<ValidationError> errors) {
-        String categoryClassifierUrl = this.categoryUrl + "/" + id;
+        String categoryClassifierUrl = categoryUrl + "/" + id;
 
         try {
-            this.restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
+            restTemplate.exchange(categoryClassifierUrl, HttpMethod.GET, entity, String.class);
             return true;
         } catch (HttpStatusCodeException e) {
             errors.add(new ValidationError("id category (id категории)", MessageError.ID_NOT_EXIST));
             return false;
         }
-    }
-
-    private boolean emptyOrNull(List list) {
-        return list == null || list.isEmpty();
     }
 }

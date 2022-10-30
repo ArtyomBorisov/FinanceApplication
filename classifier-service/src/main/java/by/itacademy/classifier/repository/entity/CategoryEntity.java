@@ -8,7 +8,6 @@ import java.util.UUID;
 @Table(name = "category", schema = "app")
 public class CategoryEntity {
     @Id
-    @Column(name = "id")
     private UUID id;
 
     @Column(name = "dt_create", nullable = false, updatable = false)
@@ -18,7 +17,7 @@ public class CategoryEntity {
     @Column(name = "dt_update", nullable = false)
     private LocalDateTime dtUpdate;
 
-    @Column(name = "title", nullable = false, unique = true, updatable = false)
+    @Column(nullable = false, unique = true, updatable = false)
     private String title;
 
     public UUID getId() {

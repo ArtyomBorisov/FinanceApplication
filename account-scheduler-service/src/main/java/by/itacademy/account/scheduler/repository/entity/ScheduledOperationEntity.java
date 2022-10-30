@@ -8,7 +8,6 @@ import java.util.UUID;
 @Table(name = "scheduled_operation", schema = "app")
 public class ScheduledOperationEntity {
     @Id
-    @Column(name = "id")
     private UUID id;
 
     @Column(name = "dt_create", nullable = false)
@@ -24,25 +23,15 @@ public class ScheduledOperationEntity {
     @Column(name = "stop_time")
     private LocalDateTime stopTime;
 
-    @Column(name = "interval")
     private long interval;
 
     @Column(name = "time_unit")
     private String timeUnit;
 
-    @Column(name = "account")
     private UUID account;
-
-    @Column(name = "description")
     private String description;
-
-    @Column(name = "value")
     private double value;
-
-    @Column(name = "currency")
     private UUID currency;
-
-    @Column(name = "category")
     private UUID category;
 
     @Column(name = "\"user\"")

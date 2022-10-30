@@ -1,12 +1,12 @@
 package by.itacademy.classifier.service;
 
-import by.itacademy.classifier.model.Category;
+import by.itacademy.classifier.dto.Category;
 import by.itacademy.classifier.repository.api.ICategoryRepository;
 import by.itacademy.classifier.repository.entity.CategoryEntity;
 import by.itacademy.classifier.service.api.IClassifierService;
-import by.itacademy.classifier.service.api.MessageError;
-import by.itacademy.classifier.service.api.ValidationError;
-import by.itacademy.classifier.service.api.ValidationException;
+import by.itacademy.classifier.exception.MessageError;
+import by.itacademy.classifier.exception.ValidationError;
+import by.itacademy.classifier.exception.ValidationException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -34,7 +34,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
     @Transactional
     @Override
     public Category create(Category category) {
-        this.checkCategory(category);
+        checkCategory(category);
 
         UUID id = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
@@ -46,13 +46,13 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         CategoryEntity saveEntity;
 
         try {
-            saveEntity = this.categoryRepository.save(
-                    this.conversionService.convert(category, CategoryEntity.class));
+            saveEntity = categoryRepository.save(
+                    conversionService.convert(category, CategoryEntity.class));
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
-        return this.conversionService.convert(saveEntity, Category.class);
+        return conversionService.convert(saveEntity, Category.class);
     }
 
     @Override
@@ -60,13 +60,13 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         Page<CategoryEntity> entities;
 
         try {
-            entities = this.categoryRepository.findByOrderByTitle(pageable);
+            entities = categoryRepository.findByOrderByTitle(pageable);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
 
         return new PageImpl<>(entities.stream()
-                .map(entity -> this.conversionService.convert(entity, Category.class))
+                .map(entity -> conversionService.convert(entity, Category.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
@@ -75,7 +75,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         CategoryEntity entity;
 
         try {
-            entity = this.categoryRepository.findById(uuid).orElse(null);
+            entity = categoryRepository.findById(uuid).orElse(null);
         } catch (Exception e) {
             throw new RuntimeException(MessageError.SQL_ERROR, e);
         }
@@ -84,7 +84,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
             throw new ValidationException(MessageError.ID_NOT_EXIST);
         }
 
-        return this.conversionService.convert(entity, Category.class);
+        return conversionService.convert(entity, Category.class);
     }
 
     @Override
@@ -92,15 +92,15 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         Page<CategoryEntity> entities;
 
         if (collectionId == null || collectionId.isEmpty()) {
-            entities = this.categoryRepository.findByOrderByTitle(pageable);
+            entities = categoryRepository.findByOrderByTitle(pageable);
         } else {
-            this.checkCollectionIdCategory(collectionId);
+            checkCollectionIdCategory(collectionId);
 
-            entities = this.categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
+            entities = categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
         }
 
         return new PageImpl<>(entities.stream()
-                .map(entity -> this.conversionService.convert(entity, Category.class))
+                .map(entity -> conversionService.convert(entity, Category.class))
                 .collect(Collectors.toList()), pageable, entities.getTotalElements());
     }
 
@@ -109,7 +109,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
             throw new ValidationException(
                     new ValidationError("title (название категории)", MessageError.MISSING_FIELD));
 
-        } else if (this.categoryRepository.findByTitle(category.getTitle()).isPresent()) {
+        } else if (categoryRepository.findByTitle(category.getTitle()).isPresent()) {
             throw new ValidationException(
                     new ValidationError("title (название категории)", MessageError.NO_UNIQUE_FIELD));
         }
@@ -119,7 +119,7 @@ public class CategoryService implements IClassifierService<Category, UUID> {
         List<ValidationError> errors = new ArrayList<>();
 
         for (UUID id : collection) {
-            if (!this.categoryRepository.existsCategoryEntityById(id)) {
+            if (!categoryRepository.existsCategoryEntityById(id)) {
                 errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
             }
         }

@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.service.api;
 
-import by.itacademy.account.scheduler.model.Schedule;
+import by.itacademy.account.scheduler.dto.Schedule;
 
 import java.util.UUID;
 

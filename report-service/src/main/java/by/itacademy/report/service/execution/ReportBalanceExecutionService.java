@@ -3,9 +3,9 @@ package by.itacademy.report.service.execution;
 import by.itacademy.report.controller.web.controllers.utils.JwtTokenUtil;
 import by.itacademy.report.service.UserHolder;
 import by.itacademy.report.service.api.IReportExecutionService;
-import by.itacademy.report.service.api.MessageError;
-import by.itacademy.report.service.api.ValidationError;
-import by.itacademy.report.service.api.ValidationException;
+import by.itacademy.report.exception.MessageError;
+import by.itacademy.report.exception.ValidationError;
+import by.itacademy.report.exception.ValidationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.*;
@@ -62,10 +62,10 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
     public ByteArrayOutputStream execute(Map<String, Object> rawParams) throws Exception {
         Map<String, Object> checkedParams = this.checkParams(rawParams);
 
-        Set<UUID> accountsUuid = (Set<UUID>) checkedParams.get(this.accountsParam);
+        Set<UUID> accountsUuid = (Set<UUID>) checkedParams.get(accountsParam);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet(this.sheetName);
+        Sheet sheet = workbook.createSheet(sheetName);
         LocalDateTime time = LocalDateTime.now();
 
         sheet.setColumnWidth(0, 35 * 256);
@@ -73,10 +73,10 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         sheet.setColumnWidth(2, 10 * 256);
         sheet.setColumnWidth(3, 10 * 256);
 
-        this.fillHeader(workbook, time);
+        fillHeader(workbook, time);
 
         List<Map<String, Object>> accountsList = new ArrayList<>();
-        HttpHeaders headers = this.createHeaders();
+        HttpHeaders headers = createHeaders();
 
         try {
             boolean lastPage = false;
@@ -89,19 +89,19 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
                 String pageJson;
 
                 if (!empty) {
-                    pageJson = this.restTemplate.postForObject(
-                            this.accountBackendUrl + "?page=" + ++temp + "&size=20",
+                    pageJson = restTemplate.postForObject(
+                            accountBackendUrl + "?page=" + ++temp + "&size=20",
                             entity,
                             String.class);
                 } else {
-                    pageJson = this.restTemplate.exchange(
-                            this.accountUrl + "?page=" + ++temp + "&size=20",
+                    pageJson = restTemplate.exchange(
+                            accountUrl + "?page=" + ++temp + "&size=20",
                             HttpMethod.GET,
                             entity,
                             String.class).getBody();
                 }
 
-                Map<String, Object> pageMap = this.mapper.readValue(pageJson, Map.class);
+                Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
 
                 accountsList.addAll((List<Map<String, Object>>) pageMap.get("content"));
 
@@ -112,9 +112,9 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
                     .map(map -> UUID.fromString((String) map.get("currency")))
                     .collect(Collectors.toSet());
 
-            Map<UUID, String> titlesCurrency = this.getTitles(this.currencyBackendUrl, uuidsCurrency);
+            Map<UUID, String> titlesCurrency = getTitles(this.currencyBackendUrl, uuidsCurrency);
 
-            this.fillSheet(workbook, accountsList, titlesCurrency);
+            fillSheet(workbook, accountsList, titlesCurrency);
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -130,12 +130,12 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
     private Map<String, Object> checkParams(Map<String, Object> rawParams) {
         Map<String, Object> checkedParams = new HashMap<>();
 
-        Object obj = rawParams.get(this.accountsParam);
+        Object obj = rawParams.get(accountsParam);
         String acc = "accounts: id счёта";
         Set<UUID> accountsUuid = null;
         List<ValidationError> errors = new ArrayList<>();
 
-        HttpHeaders headers = this.createHeaders();
+        HttpHeaders headers = createHeaders();
 
         if (obj instanceof Collection) {
             try {
@@ -150,8 +150,8 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
 
             for (UUID id : accountsUuid) {
                 try {
-                    String url = this.accountUrl + "/" + id;
-                    this.restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+                    String url = accountUrl + "/" + id;
+                    restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
                 } catch (HttpStatusCodeException e) {
                     errors.add(new ValidationError(id.toString(), MessageError.ID_NOT_EXIST));
                 }
@@ -164,14 +164,14 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
             throw new ValidationException(errors);
         }
 
-        checkedParams.put(this.accountsParam, accountsUuid);
+        checkedParams.put(accountsParam, accountsUuid);
 
         return checkedParams;
     }
 
     private void fillHeader(XSSFWorkbook workbook,
                             LocalDateTime time) {
-        Sheet sheet = workbook.getSheet(this.sheetName);
+        Sheet sheet = workbook.getSheet(sheetName);
 
         Row rowHeader1 = sheet.createRow(0);
         Row rowHeader2 = sheet.createRow(1);
@@ -180,46 +180,46 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 3));
         sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 3));
 
-        XSSFFont fontHeaderRow = this.createFont(workbook, this.fontName, (short) 14, true, false);
-        XSSFFont fontHeaderSheet = this.createFont(workbook, fontName, (short) 12, false, true);
+        XSSFFont fontHeaderRow = createFont(workbook, fontName, (short) 14, true, false);
+        XSSFFont fontHeaderSheet = createFont(workbook, fontName, (short) 12, false, true);
 
-        CellStyle cellStyleHeaderRow = this.createCellStyle(workbook, fontHeaderRow, true, false);
+        CellStyle cellStyleHeaderRow = createCellStyle(workbook, fontHeaderRow, true, false);
         cellStyleHeaderRow.setAlignment(HorizontalAlignment.CENTER);
 
-        CellStyle cellStyleHeaderSheet = this.createCellStyle(workbook, fontHeaderSheet, true, true);
+        CellStyle cellStyleHeaderSheet = createCellStyle(workbook, fontHeaderSheet, true, true);
         cellStyleHeaderSheet.setAlignment(HorizontalAlignment.CENTER);
 
-        this.createCell(rowHeader1, 0, cellStyleHeaderRow, "Отчёт по балансам счетов");
-        this.createCell(rowHeader2, 0, cellStyleHeaderRow,
+        createCell(rowHeader1, 0, cellStyleHeaderRow, "Отчёт по балансам счетов");
+        createCell(rowHeader2, 0, cellStyleHeaderRow,
                 "Составлен на " + time.format(DateTimeFormatter.ofPattern("HH:mm dd.MM.yyyy")));
 
         int numberCell = -1;
 
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Счёт");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Тип");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Валюта");
-        this.createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Баланс");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Счёт");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Тип");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Валюта");
+        createCell(rowTitles, ++numberCell, cellStyleHeaderSheet, "Баланс");
     }
 
     private void fillSheet(XSSFWorkbook workbook,
                            List<Map<String, Object>> accounts,
                            Map<UUID, String> titlesCurrency) throws JsonProcessingException {
-        Sheet sheet = workbook.getSheet(this.sheetName);
+        Sheet sheet = workbook.getSheet(sheetName);
 
-        XSSFFont fontSheet = this.createFont(workbook, this.fontName, (short) 11, false, false);
+        XSSFFont fontSheet = createFont(workbook, fontName, (short) 11, false, false);
 
-        CellStyle cellStyleSheet = this.createCellStyle(workbook, fontSheet, true, true);
+        CellStyle cellStyleSheet = createCellStyle(workbook, fontSheet, true, true);
 
         int numberRow = 2;
         for (Map<String, Object> acc : accounts) {
             Row row = sheet.createRow(++numberRow);
 
             int numberCell = -1;
-            this.createCell(row, ++numberCell, cellStyleSheet, acc.get("title"));
-            this.createCell(row, ++numberCell, cellStyleSheet, acc.get("type"));
-            this.createCell(row, ++numberCell, cellStyleSheet,
-                    titlesCurrency.get(UUID.fromString((String) acc.get("currency"))));
-            this.createCell(row, ++numberCell, cellStyleSheet, acc.get("balance"));
+            createCell(row, ++numberCell, cellStyleSheet, acc.get("title"));
+            createCell(row, ++numberCell, cellStyleSheet, acc.get("type"));
+            createCell(row, ++numberCell, cellStyleSheet,
+               titlesCurrency.get(UUID.fromString((String) acc.get("currency"))));
+            createCell(row, ++numberCell, cellStyleSheet, acc.get("balance"));
         }
     }
 
@@ -228,7 +228,7 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
         boolean lastPage = false;
         int page = -1;
 
-        HttpHeaders headers = this.createHeaders();
+        HttpHeaders headers = createHeaders();
 
         HttpEntity<Set<UUID>> request = new HttpEntity<>(uuids, headers);
 
@@ -238,7 +238,7 @@ public class ReportBalanceExecutionService implements IReportExecutionService {
                     request,
                     String.class);
 
-            Map<String, Object> pageMap = this.mapper.readValue(pageJson, Map.class);
+            Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
 
             List<Map<String, Object>> content = (List<Map<String, Object>>) pageMap.get("content");
 

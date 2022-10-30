@@ -8,7 +8,6 @@ import java.util.UUID;
 @Table(name = "currency", schema = "app")
 public class CurrencyEntity {
     @Id
-    @Column(name = "id")
     private UUID id;
 
     @Column(name = "dt_create", nullable = false, updatable = false)
@@ -18,10 +17,10 @@ public class CurrencyEntity {
     @Column(name = "dt_update", nullable = false)
     private LocalDateTime dtUpdate;
 
-    @Column(name = "title", nullable = false, unique = true, updatable = false)
+    @Column(nullable = false, unique = true, updatable = false)
     private String title;
 
-    @Column(name = "description", nullable = false)
+    @Column(nullable = false)
     private String description;
 
     public UUID getId() {

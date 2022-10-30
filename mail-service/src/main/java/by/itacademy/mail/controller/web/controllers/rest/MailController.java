@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(value = "/mail/report/{uuid}")
+@RequestMapping("/mail/report/{uuid}")
 public class MailController {
 
     private final MailService mailService;
@@ -17,6 +17,6 @@ public class MailController {
 
     @GetMapping
     public void index(@PathVariable(name = "uuid") UUID id) {
-        this.mailService.sendReport(id);
+        mailService.sendReport(id);
     }
 }

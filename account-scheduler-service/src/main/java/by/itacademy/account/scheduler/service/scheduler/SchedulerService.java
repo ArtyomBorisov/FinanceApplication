@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.service.scheduler;
 
-import by.itacademy.account.scheduler.model.Schedule;
+import by.itacademy.account.scheduler.dto.Schedule;
 import by.itacademy.account.scheduler.service.api.ISchedulerService;
 import org.quartz.*;
 import org.springframework.core.convert.ConversionService;
@@ -28,7 +28,7 @@ public class SchedulerService implements ISchedulerService {
     @Override
     public void addScheduledOperation(Schedule schedule, UUID idScheduledOperation) {
         JobDetail job = JobBuilder.newJob(CreateOperationJob.class)
-                .withIdentity(idScheduledOperation.toString(), this.operations)
+                .withIdentity(idScheduledOperation.toString(), operations)
                 .usingJobData("operation", idScheduledOperation.toString())
                 .build();
 
@@ -36,13 +36,13 @@ public class SchedulerService implements ISchedulerService {
         LocalDateTime startTime = schedule.getStartTime();
 
         TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
-                .withIdentity(idScheduledOperation.toString(), this.operations);
+                .withIdentity(idScheduledOperation.toString(), operations);
 
         if (startTime == null) {
             builder.startNow();
             startTime = LocalDateTime.now();
         } else {
-            builder.startAt(this.conversionService.convert(startTime, Date.class));
+            builder.startAt(conversionService.convert(startTime, Date.class));
         }
 
         if (interval > 0 && schedule.getTimeUnit() != null) {
@@ -93,13 +93,13 @@ public class SchedulerService implements ISchedulerService {
         }
 
         if (schedule.getStopTime() != null) {
-            builder.endAt(this.conversionService.convert(schedule.getStopTime(), Date.class));
+            builder.endAt(conversionService.convert(schedule.getStopTime(), Date.class));
         }
 
         Trigger trigger = builder.build();
 
         try {
-            this.scheduler.scheduleJob(job, trigger);
+            scheduler.scheduleJob(job, trigger);
         } catch (SchedulerException e) {
             throw new RuntimeException("Ошибка создания запланированной операции", e);
         }
@@ -107,11 +107,11 @@ public class SchedulerService implements ISchedulerService {
 
     @Override
     public void deleteScheduledOperation(UUID idScheduledOperation) {
-        TriggerKey triggerKey = new TriggerKey(idScheduledOperation.toString(), this.operations);
+        TriggerKey triggerKey = new TriggerKey(idScheduledOperation.toString(), operations);
 
         try {
-            this.scheduler.deleteJob(new JobKey(idScheduledOperation.toString(), this.operations));
-            this.scheduler.unscheduleJob(triggerKey);
+            scheduler.deleteJob(new JobKey(idScheduledOperation.toString(), operations));
+            scheduler.unscheduleJob(triggerKey);
         } catch (SchedulerException e) {
             throw new RuntimeException("Ошибка удаления запланированной операции", e);
         }
