@@ -1,11 +1,12 @@
-# ITAcademyFinance
-Сервис позволяющий вести финансы с использованием REST api.
-Сервис построен на микросервисной архитектуре с упаковкой сервисов в docker и развёртыванием через docker compose.
+<h2>Finance Application</h2>
+<p><b>RESTful</b> application is developed for finance management. It is based on <b>microservice architecture</b>. The application is packaged with <b>Docker</b>.
 
-Реализованы следующие сервисы:
- - account-service : сервис реализовывает CRUD операции со счетами и операциями по ним;
- - account-scheduler-service : планирование финансовых операций на основе Quartz с гибкой настройкой расписания;
- - classifier-service : сервис предназначен для хранения валют и категорий операций;
- - mail-service : сервис для отправки отчётов по email;
- - report-service : формирование отчётов с применением различных фильтров в xlsx с использованием Apache POI;
- - user-service : многопользовательская работа с сервисом с использование JWT.
+Each microservice is responsible for its own functionality:
+ - <b>account-service</b> is designed for CRUD operations with accounts and financial operations.
+ - <b>account-scheduler-service</b> is responsible for planning of operations according to a schedule via Quartz.
+ - <b>classifier-service</b> is for control over currencies and categories.
+ - <b>mail-service</b> is sending a report by email.
+ - <b>report-service</b> is designed for xlsx report creating via Apache POI.
+ - <b>user-service</b> is for multi-user usage via JWT.
+<hr>
+<p>Tech: Java 11, Spring Framework (Boot, Data JPA, Security), PostgreSQL, Quartz, Apache POI, Docker, Swagger.
