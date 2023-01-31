@@ -27,24 +27,44 @@ public class CurrencyEntity {
         return id;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public LocalDateTime getDtCreate() {
         return dtCreate;
+    }
+
+    public void setDtCreate(LocalDateTime dtCreate) {
+        this.dtCreate = dtCreate;
     }
 
     public LocalDateTime getDtUpdate() {
         return dtUpdate;
     }
 
+    public void setDtUpdate(LocalDateTime dtUpdate) {
+        this.dtUpdate = dtUpdate;
+    }
+
     public String getTitle() {
         return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getDescription() {
         return description;
     }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public static class Builder {
-        private CurrencyEntity currencyEntity;
+        private final CurrencyEntity currencyEntity;
 
         private Builder() {
             this.currencyEntity = new CurrencyEntity();

@@ -67,7 +67,7 @@ public class Currency {
     }
 
     public static class Builder {
-        private Currency currency;
+        private final Currency currency;
 
         private Builder() {
             this.currency = new Currency();

@@ -58,7 +58,7 @@ public class Category {
     }
 
     public static class Builder {
-        private Category category;
+        private final Category category;
 
         private Builder() {
             this.category = new Category();

@@ -24,20 +24,36 @@ public class CategoryEntity {
         return id;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public LocalDateTime getDtCreate() {
         return dtCreate;
+    }
+
+    public void setDtCreate(LocalDateTime dtCreate) {
+        this.dtCreate = dtCreate;
     }
 
     public LocalDateTime getDtUpdate() {
         return dtUpdate;
     }
 
+    public void setDtUpdate(LocalDateTime dtUpdate) {
+        this.dtUpdate = dtUpdate;
+    }
+
     public String getTitle() {
         return title;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public static class Builder {
-        private CategoryEntity categoryEntity;
+        private final CategoryEntity categoryEntity;
 
         private Builder() {
             this.categoryEntity = new CategoryEntity();

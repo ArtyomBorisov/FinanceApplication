@@ -1,6 +1,6 @@
 package by.itacademy.classifier.config;
 
-import by.itacademy.classifier.controller.web.controllers.filter.JwtFilter;
+import by.itacademy.classifier.controller.filter.JwtFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
