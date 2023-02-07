@@ -3,7 +3,7 @@ package by.itacademy.classifier.controller.rest;
 import by.itacademy.classifier.constant.MessageError;
 import by.itacademy.classifier.dto.Category;
 import by.itacademy.classifier.service.ClassifierService;
-import by.itacademy.classifier.validation.annotation.CategoryValid;
+import by.itacademy.classifier.validation.annotation.CustomValid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ public class CategoryController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void create(@RequestBody @CategoryValid Category category) {
+    public void create(@RequestBody @CustomValid Category category) {
         categoryService.create(category);
     }
 

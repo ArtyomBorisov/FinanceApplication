@@ -3,7 +3,7 @@ package by.itacademy.classifier.controller.rest;
 import by.itacademy.classifier.constant.MessageError;
 import by.itacademy.classifier.dto.Currency;
 import by.itacademy.classifier.service.ClassifierService;
-import by.itacademy.classifier.validation.annotation.CurrencyValid;
+import by.itacademy.classifier.validation.annotation.CustomValid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,13 +26,13 @@ public class CurrencyController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void create(@RequestBody @CurrencyValid Currency currency) {
+    public void create(@RequestBody @CustomValid Currency currency) {
         currencyService.create(currency);
     }
 
     @GetMapping
-    public Page<Currency> index(@RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
-                                @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
+    public Page<Currency> get(@RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
+                              @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
 
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         return currencyService.get(pageable);

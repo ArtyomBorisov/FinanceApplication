@@ -1,6 +1,6 @@
 package by.itacademy.account.dto;
 
-import by.itacademy.account.enums.Type;
+import by.itacademy.account.constant.AccountType;
 import by.itacademy.account.utils.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.account.utils.serializer.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,7 +28,7 @@ public class Account {
     private String title;
     private String description;
     private double balance;
-    private Type type;
+    private AccountType accountType;
     private UUID currency;
 
     @JsonIgnore
@@ -82,12 +82,12 @@ public class Account {
         this.balance = balance;
     }
 
-    public Type getType() {
-        return type;
+    public AccountType getType() {
+        return accountType;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public void setType(AccountType accountType) {
+        this.accountType = accountType;
     }
 
     public UUID getCurrency() {
@@ -143,8 +143,8 @@ public class Account {
             return this;
         }
 
-        public Builder setType(Type type) {
-            this.account.type = type;
+        public Builder setType(AccountType accountType) {
+            this.account.accountType = accountType;
             return this;
         }
 

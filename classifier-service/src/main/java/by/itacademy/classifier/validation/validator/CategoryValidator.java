@@ -1,20 +1,18 @@
 package by.itacademy.classifier.validation.validator;
 
-import by.itacademy.classifier.constant.FieldName;
-import by.itacademy.classifier.constant.MessageError;
 import by.itacademy.classifier.dto.Category;
-import by.itacademy.classifier.repository.CategoryRepository;
-import by.itacademy.classifier.validation.annotation.CategoryValid;
+import by.itacademy.classifier.validation.annotation.CustomValid;
+import by.itacademy.classifier.validation.helper.CategoryValidatorHelper;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class CategoryValidator implements ConstraintValidator<CategoryValid, Category> {
+public class CategoryValidator implements ConstraintValidator<CustomValid, Category> {
 
-    private final CategoryRepository repository;
+    private final CategoryValidatorHelper helper;
 
-    public CategoryValidator(CategoryRepository repository) {
-        this.repository = repository;
+    public CategoryValidator(CategoryValidatorHelper helper) {
+        this.helper = helper;
     }
 
     @Override
@@ -23,24 +21,6 @@ public class CategoryValidator implements ConstraintValidator<CategoryValid, Cat
             return false;
         }
 
-        boolean valid = true;
-
-        String title = category.getTitle();
-        if (title == null || title.isEmpty()) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(MessageError.MISSING_FIELD)
-                    .addPropertyNode(FieldName.TITLE)
-                    .addConstraintViolation();
-            valid = false;
-
-        } else if (repository.findByTitle(title).isPresent()) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(MessageError.NO_UNIQUE_FIELD)
-                    .addPropertyNode(FieldName.TITLE)
-                    .addConstraintViolation();
-            valid = false;
-        }
-
-        return valid;
+        return helper.isTitleValid(category.getTitle(), context);
     }
 }

@@ -3,7 +3,7 @@ package by.itacademy.classifier.controller.rest;
 import by.itacademy.classifier.constant.MessageError;
 import by.itacademy.classifier.dto.Category;
 import by.itacademy.classifier.service.ClassifierService;
-import by.itacademy.classifier.validation.annotation.CategoryUuidValid;
+import by.itacademy.classifier.validation.annotation.CategoryExist;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
@@ -25,7 +25,7 @@ public class CategoryBackendController {
     }
 
     @PostMapping
-    public Page<Category> get(@RequestBody @CategoryUuidValid Collection<UUID> categories,
+    public Page<Category> get(@RequestBody @CategoryExist Collection<UUID> categories,
                               @RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                               @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
 
@@ -34,7 +34,7 @@ public class CategoryBackendController {
     }
 
     @GetMapping("/{uuid}")
-    public Category get(@PathVariable(name = "uuid") UUID id) {
+    public Category get(@PathVariable(name = "uuid") @CategoryExist UUID id) {
         return categoryService.get(id);
     }
 }

@@ -1,7 +1,7 @@
 package by.itacademy.account.utils.converter;
 
+import by.itacademy.account.constant.AccountType;
 import by.itacademy.account.dto.Account;
-import by.itacademy.account.enums.Type;
 import by.itacademy.account.repository.entity.AccountEntity;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
@@ -17,7 +17,7 @@ public class AccountEntityToDtoConverter implements Converter<AccountEntity, Acc
                 .setTitle(entity.getTitle())
                 .setDescription(entity.getDescription())
                 .setBalance(entity.getBalance() == null ? null : entity.getBalance().getSum())
-                .setType(Type.valueOf(entity.getType()))
+                .setType(AccountType.valueOf(entity.getType()))
                 .setCurrency(entity.getCurrency())
                 .setUser(entity.getUser())
                 .build();

@@ -3,7 +3,7 @@ package by.itacademy.classifier.controller.rest;
 import by.itacademy.classifier.constant.MessageError;
 import by.itacademy.classifier.dto.Currency;
 import by.itacademy.classifier.service.ClassifierService;
-import by.itacademy.classifier.validation.annotation.CurrencyUuidValid;
+import by.itacademy.classifier.validation.annotation.CurrencyExist;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
@@ -25,7 +25,7 @@ public class CurrencyBackendController {
     }
 
     @PostMapping
-    public Page<Currency> get(@RequestBody @CurrencyUuidValid Collection<UUID> currencies,
+    public Page<Currency> get(@RequestBody @CurrencyExist Collection<UUID> currencies,
                               @RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                               @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
 
@@ -34,7 +34,7 @@ public class CurrencyBackendController {
     }
 
     @GetMapping("/{uuid}")
-    public Currency get(@PathVariable(name = "uuid") UUID id) {
+    public Currency get(@PathVariable(name = "uuid") @CurrencyExist UUID id) {
         return currencyService.get(id);
     }
 }

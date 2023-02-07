@@ -23,7 +23,7 @@ public class AccountEntity {
     private String description;
 
     @OneToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "balance", nullable = false)
     private BalanceEntity balance;
 
     @Column(nullable = false)
