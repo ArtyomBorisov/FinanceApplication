@@ -1,4 +1,4 @@
-package by.itacademy.account.scheduler.controller.web.controllers.advice;
+package by.itacademy.account.scheduler.controller.advice;
 
 public class SingleResponseError {
     private String logref;

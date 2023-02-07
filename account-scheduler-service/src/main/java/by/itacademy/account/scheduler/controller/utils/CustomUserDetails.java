@@ -1,6 +1,6 @@
-package by.itacademy.account.scheduler.service;
+package by.itacademy.account.scheduler.controller.utils;
 
-import by.itacademy.account.scheduler.controller.web.controllers.utils.JwtTokenUtil;
+import by.itacademy.account.scheduler.controller.utils.JwtTokenUtil;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

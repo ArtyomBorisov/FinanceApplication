@@ -67,7 +67,7 @@ public class ScheduledOperation {
     }
 
     public static class Builder {
-        private ScheduledOperation scheduledOperation;
+        private final ScheduledOperation scheduledOperation;
 
         private Builder() {
             this.scheduledOperation = new ScheduledOperation();

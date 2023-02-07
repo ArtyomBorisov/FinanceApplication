@@ -63,7 +63,7 @@ public class Operation {
     }
 
     public static class Builder {
-        private Operation operation;
+        private final Operation operation;
 
         private Builder() {
             this.operation = new Operation();

@@ -1,4 +1,4 @@
-package by.itacademy.account.scheduler.controller.web.controllers.utils;
+package by.itacademy.account.scheduler.controller.utils;
 
 import io.jsonwebtoken.*;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.dto;
 
-import by.itacademy.account.scheduler.enums.TimeUnit;
+import by.itacademy.account.scheduler.constant.TimeUnit;
 import by.itacademy.account.scheduler.utils.serializer.CustomLocalDateTimeDeserializer;
 import by.itacademy.account.scheduler.utils.serializer.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -58,7 +58,7 @@ public class Schedule {
     }
 
     public static class Builder {
-        private Schedule schedule;
+        private final Schedule schedule;
 
         private Builder() {
             this.schedule = new Schedule();

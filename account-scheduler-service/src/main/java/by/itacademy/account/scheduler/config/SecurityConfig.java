@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.config;
 
-import by.itacademy.account.scheduler.controller.web.controllers.filter.JwtFilter;
+import by.itacademy.account.scheduler.controller.filter.JwtFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;

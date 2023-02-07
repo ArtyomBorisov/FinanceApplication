@@ -1,4 +1,4 @@
-package by.itacademy.account.scheduler.enums;
+package by.itacademy.account.scheduler.constant;
 
 public enum TimeUnit {
     SECOND,

@@ -3,7 +3,7 @@ package by.itacademy.account.scheduler.utils.converter;
 import by.itacademy.account.scheduler.dto.Operation;
 import by.itacademy.account.scheduler.dto.Schedule;
 import by.itacademy.account.scheduler.dto.ScheduledOperation;
-import by.itacademy.account.scheduler.enums.TimeUnit;
+import by.itacademy.account.scheduler.constant.TimeUnit;
 import by.itacademy.account.scheduler.repository.entity.ScheduledOperationEntity;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
