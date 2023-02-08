@@ -1,6 +1,6 @@
 package by.itacademy.account.scheduler.config;
 
-import by.itacademy.account.scheduler.controller.utils.JwtTokenUtil;
+import by.itacademy.account.scheduler.utils.impl.JwtTokenUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;

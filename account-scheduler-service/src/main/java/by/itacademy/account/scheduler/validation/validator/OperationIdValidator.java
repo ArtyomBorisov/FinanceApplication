@@ -1,7 +1,7 @@
 package by.itacademy.account.scheduler.validation.validator;
 
 import by.itacademy.account.scheduler.constant.MessageError;
-import by.itacademy.account.scheduler.repository.ScheduledOperationRepository;
+import by.itacademy.account.scheduler.dao.ScheduledOperationRepository;
 import by.itacademy.account.scheduler.service.UserHolder;
 import by.itacademy.account.scheduler.validation.annotation.Exist;
 import org.springframework.transaction.annotation.Transactional;

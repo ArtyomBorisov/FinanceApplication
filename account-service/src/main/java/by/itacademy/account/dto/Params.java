@@ -3,7 +3,6 @@ package by.itacademy.account.dto;
 import by.itacademy.account.constant.ParamSort;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 

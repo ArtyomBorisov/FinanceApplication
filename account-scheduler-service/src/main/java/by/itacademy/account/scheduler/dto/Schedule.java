@@ -1,22 +1,14 @@
 package by.itacademy.account.scheduler.dto;
 
 import by.itacademy.account.scheduler.constant.TimeUnit;
-import by.itacademy.account.scheduler.utils.serializer.CustomLocalDateTimeDeserializer;
-import by.itacademy.account.scheduler.utils.serializer.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.time.LocalDateTime;
 
 public class Schedule {
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @JsonProperty("start_time")
     private LocalDateTime startTime;
 
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @JsonProperty("stop_time")
     private LocalDateTime stopTime;
 

@@ -1,10 +1,10 @@
 package by.itacademy.account.scheduler.service.impl;
 
-import by.itacademy.account.scheduler.controller.utils.JwtTokenUtil;
+import by.itacademy.account.scheduler.utils.impl.JwtTokenUtil;
 import by.itacademy.account.scheduler.dto.Operation;
 import by.itacademy.account.scheduler.dto.ScheduledOperation;
-import by.itacademy.account.scheduler.repository.ScheduledOperationRepository;
-import by.itacademy.account.scheduler.repository.entity.ScheduledOperationEntity;
+import by.itacademy.account.scheduler.dao.ScheduledOperationRepository;
+import by.itacademy.account.scheduler.dao.entity.ScheduledOperationEntity;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;

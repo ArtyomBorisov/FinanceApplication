@@ -1,8 +1,8 @@
 package by.itacademy.classifier.service.impl;
 
 import by.itacademy.classifier.dto.Category;
-import by.itacademy.classifier.repository.CategoryRepository;
-import by.itacademy.classifier.repository.entity.CategoryEntity;
+import by.itacademy.classifier.dao.CategoryRepository;
+import by.itacademy.classifier.dao.entity.CategoryEntity;
 import by.itacademy.classifier.service.ClassifierService;
 import by.itacademy.classifier.utils.Generator;
 import org.springframework.core.convert.ConversionService;

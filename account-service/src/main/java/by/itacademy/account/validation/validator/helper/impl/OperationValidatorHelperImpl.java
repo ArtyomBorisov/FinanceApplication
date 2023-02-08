@@ -2,9 +2,9 @@ package by.itacademy.account.validation.validator.helper.impl;
 
 import by.itacademy.account.constant.FieldName;
 import by.itacademy.account.constant.MessageError;
-import by.itacademy.account.repository.OperationRepository;
-import by.itacademy.account.repository.entity.AccountEntity;
-import by.itacademy.account.repository.entity.OperationEntity;
+import by.itacademy.account.dao.OperationRepository;
+import by.itacademy.account.dao.entity.AccountEntity;
+import by.itacademy.account.dao.entity.OperationEntity;
 import by.itacademy.account.validation.validator.helper.OperationValidatorHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

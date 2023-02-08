@@ -23,6 +23,4 @@ public final class MessageError {
 
     public static final String SERVER_ERROR
             = "Сервер не смог корректно обработать запрос. Пожалуйста обратитесь к администратору";
-
-//    public static final String INCORRECT_PARAMS = "Переданы некорректные параметры";
 }

@@ -1,12 +1,8 @@
 package by.itacademy.account.dto;
 
 import by.itacademy.account.constant.AccountType;
-import by.itacademy.account.utils.serializer.CustomLocalDateTimeDeserializer;
-import by.itacademy.account.utils.serializer.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,13 +11,9 @@ public class Account {
     @JsonProperty("uuid")
     private UUID id;
 
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @JsonProperty("dt_create")
     private LocalDateTime dtCreate;
 
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @JsonProperty("dt_update")
     private LocalDateTime dtUpdate;
 

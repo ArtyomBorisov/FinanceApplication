@@ -1,8 +1,8 @@
 package by.itacademy.classifier.service.impl;
 
 import by.itacademy.classifier.dto.Currency;
-import by.itacademy.classifier.repository.CurrencyRepository;
-import by.itacademy.classifier.repository.entity.CurrencyEntity;
+import by.itacademy.classifier.dao.CurrencyRepository;
+import by.itacademy.classifier.dao.entity.CurrencyEntity;
 import by.itacademy.classifier.service.ClassifierService;
 import by.itacademy.classifier.utils.Generator;
 import org.springframework.core.convert.ConversionService;

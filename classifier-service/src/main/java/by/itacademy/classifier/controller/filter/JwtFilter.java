@@ -1,7 +1,7 @@
 package by.itacademy.classifier.controller.filter;
 
-import by.itacademy.classifier.controller.utils.JwtTokenUtil;
-import by.itacademy.classifier.service.impl.CustomUserDetails;
+import by.itacademy.classifier.utils.impl.JwtTokenUtil;
+import by.itacademy.classifier.utils.impl.CustomUserDetails;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;

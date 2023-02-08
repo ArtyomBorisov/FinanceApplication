@@ -8,8 +8,6 @@ public final class MessageError {
 
     public static final String MISSING_FIELD = "Не передано обязательное поле (или передано пустое)";
 
-    public static final String NOT_UNIQUE_FIELD = "Передано не уникальное поле";
-
     public static final String PAGE_SIZE = "Размер страницы не может быть меньше 1";
 
     public static final String PAGE_NUMBER = "Номер страницы не может быть меньше 0";

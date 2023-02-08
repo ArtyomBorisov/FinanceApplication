@@ -1,10 +1,10 @@
 package by.itacademy.account.service.impl;
 
 import by.itacademy.account.dto.Account;
-import by.itacademy.account.repository.AccountRepository;
-import by.itacademy.account.repository.BalanceRepository;
-import by.itacademy.account.repository.entity.AccountEntity;
-import by.itacademy.account.repository.entity.BalanceEntity;
+import by.itacademy.account.dao.AccountRepository;
+import by.itacademy.account.dao.BalanceRepository;
+import by.itacademy.account.dao.entity.AccountEntity;
+import by.itacademy.account.dao.entity.BalanceEntity;
 import by.itacademy.account.service.AccountService;
 import by.itacademy.account.service.UserHolder;
 import by.itacademy.account.utils.Generator;

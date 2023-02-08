@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserHolderImpl implements UserHolder {
+
+    @Override
     public String getLoginFromContext() {
         UserDetails user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 

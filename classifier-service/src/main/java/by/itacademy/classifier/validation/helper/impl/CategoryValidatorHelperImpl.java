@@ -2,7 +2,7 @@ package by.itacademy.classifier.validation.helper.impl;
 
 import by.itacademy.classifier.constant.FieldName;
 import by.itacademy.classifier.constant.MessageError;
-import by.itacademy.classifier.repository.CategoryRepository;
+import by.itacademy.classifier.dao.CategoryRepository;
 import by.itacademy.classifier.validation.helper.CategoryValidatorHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

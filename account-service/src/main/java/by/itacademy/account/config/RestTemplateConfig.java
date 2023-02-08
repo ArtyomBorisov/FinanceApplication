@@ -1,6 +1,6 @@
 package by.itacademy.account.config;
 
-import by.itacademy.account.controller.utils.JwtTokenUtil;
+import by.itacademy.account.utils.impl.JwtTokenUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -14,7 +14,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -24,9 +23,6 @@ public class RestTemplateConfig {
     public RestTemplate restTemplate() {
         RestTemplate restTemplate = new RestTemplate();
         List<ClientHttpRequestInterceptor> interceptors = restTemplate.getInterceptors();
-        if (interceptors.isEmpty()) {
-            interceptors = new ArrayList<>();
-        }
         interceptors.add(new JwtInterceptor());
         interceptors.add(new ContentTypeInterceptor(MediaType.APPLICATION_JSON));
         restTemplate.setInterceptors(interceptors);

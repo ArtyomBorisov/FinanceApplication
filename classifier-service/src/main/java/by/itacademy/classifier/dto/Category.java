@@ -1,10 +1,6 @@
 package by.itacademy.classifier.dto;
 
-import by.itacademy.classifier.utils.serializer.CustomLocalDateTimeDeserializer;
-import by.itacademy.classifier.utils.serializer.CustomLocalDateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,13 +9,9 @@ public class Category {
     @JsonProperty("uuid")
     private UUID id;
 
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @JsonProperty("dt_create")
     private LocalDateTime dtCreate;
 
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @JsonProperty("dt_update")
     private LocalDateTime dtUpdate;
 

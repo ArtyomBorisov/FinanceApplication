@@ -3,7 +3,7 @@ package by.itacademy.account.validation.validator.helper.impl;
 import by.itacademy.account.constant.AccountType;
 import by.itacademy.account.constant.FieldName;
 import by.itacademy.account.constant.MessageError;
-import by.itacademy.account.repository.AccountRepository;
+import by.itacademy.account.dao.AccountRepository;
 import by.itacademy.account.validation.validator.helper.AccountValidatorHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
