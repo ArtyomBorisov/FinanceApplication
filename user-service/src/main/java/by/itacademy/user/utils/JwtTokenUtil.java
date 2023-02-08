@@ -1,7 +1,6 @@
-package by.itacademy.user.controller.utils;
+package by.itacademy.user.utils;
 
 import io.jsonwebtoken.*;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Date;

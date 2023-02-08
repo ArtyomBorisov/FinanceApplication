@@ -1,4 +1,4 @@
-package by.itacademy.user.exception;
+package by.itacademy.user.controller.advice;
 
 public class ValidationError {
     private String field;

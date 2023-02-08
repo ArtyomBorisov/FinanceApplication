@@ -1,7 +1,5 @@
 package by.itacademy.user.controller.advice;
 
-import by.itacademy.user.exception.ValidationError;
-
 import java.util.List;
 
 public class MultipleResponseError {

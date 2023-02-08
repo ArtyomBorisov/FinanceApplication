@@ -1,4 +1,4 @@
-package by.itacademy.user.controller.dto;
+package by.itacademy.user.dto;
 
 public class LoginDto {
     private String login;

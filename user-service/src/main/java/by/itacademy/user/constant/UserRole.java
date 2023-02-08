@@ -1,4 +1,4 @@
-package by.itacademy.user.enums;
+package by.itacademy.user.constant;
 
 public enum UserRole {
     USER,

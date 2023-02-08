@@ -1,6 +1,6 @@
 package by.itacademy.user.config;
 
-import by.itacademy.user.enums.UserRole;
+import by.itacademy.user.constant.UserRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;

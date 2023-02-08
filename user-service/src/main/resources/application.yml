@@ -4,3 +4,6 @@ spring:
     url: "${spring.datasource.url}"
     username: "${spring.datasource.username}"
     password: "${spring.datasource.password}"
+
+#server:
+#  port : 8081

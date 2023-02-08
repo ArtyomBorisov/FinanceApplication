@@ -1,38 +1,60 @@
 package by.itacademy.user.controller.advice;
 
-import by.itacademy.user.exception.ValidationException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import by.itacademy.user.constant.MessageError;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 @ControllerAdvice
 public class ExceptionAdvice {
 
-    private final String error = "error";
+    private final String ERROR = "error";
+    private final String STRUCTURED_ERROR = "structured_error";
+    private final String LOGGER_MESSAGE = "{}: {}";
+    private final Logger logger = LogManager.getLogger();
 
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<?> validationHandler(ValidationException e) {
-        if (e.getErrors().isEmpty()) {
-            return new ResponseEntity<>(new SingleResponseError(error, e.getMessage()), HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> invalidRequestParamsHandler(ConstraintViolationException e) {
+        logger.error(LOGGER_MESSAGE, e.getClass().getSimpleName(), e.getMessage());
+
+        Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
+        int size = violations.size();
+
+        if (size == 0) {
+            return new ResponseEntity<>(new SingleResponseError(ERROR,
+                    MessageError.INCORRECT_PARAMS),
+                    HttpStatus.BAD_REQUEST);
+
         } else {
-            return new ResponseEntity<>(new MultipleResponseError("structured_error", e.getErrors()),
+            Function<ConstraintViolation<?>, ValidationError> function =
+                    violation -> new ValidationError(
+                            violation.getPropertyPath().toString(),
+                            violation.getMessage());
+
+            List<ValidationError> errors = violations.stream()
+                    .map(function)
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(new MultipleResponseError(STRUCTURED_ERROR, errors),
                     HttpStatus.BAD_REQUEST);
         }
     }
 
-    @ExceptionHandler(InvalidFormatException.class)
-    public ResponseEntity<?> invalidFormatHandler(InvalidFormatException e) {
-        return new ResponseEntity<>(new SingleResponseError(error,
-                "Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз"),
-                HttpStatus.BAD_REQUEST);
-    }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> exceptionHandler(Exception e) {
+        logger.error(LOGGER_MESSAGE, e.getClass().getSimpleName(), e.getMessage());
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<?> exceptionHandler(RuntimeException e) {
-        return new ResponseEntity<>(new SingleResponseError(error,
-                "Сервер не смог корректно обработать запрос. Пожалуйста обратитесь к администратору"),
+        return new ResponseEntity<>(new SingleResponseError(ERROR, MessageError.SERVER_ERROR),
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
