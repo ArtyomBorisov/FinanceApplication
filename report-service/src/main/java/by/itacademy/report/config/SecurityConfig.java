@@ -1,6 +1,6 @@
 package by.itacademy.report.config;
 
-import by.itacademy.report.controller.web.controllers.filter.JwtFilter;
+import by.itacademy.report.controller.filter.JwtFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;

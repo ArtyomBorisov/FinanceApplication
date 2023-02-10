@@ -1,29 +1,33 @@
-package by.itacademy.report.dto;
+package by.itacademy.report.dao.entity;
 
-import by.itacademy.report.constant.ReportType;
-import by.itacademy.report.constant.Status;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import by.itacademy.report.converter.ParamsToStringConverter;
+import by.itacademy.report.dto.Params;
 
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Report {
-    @JsonProperty("uuid")
+@Entity
+@Table(name = "report", schema = "app")
+public class ReportEntity {
+    @Id
     private UUID id;
 
-    @JsonProperty("dt_create")
+    @Column(name = "dt_create")
     private LocalDateTime dtCreate;
 
-    @JsonProperty("dt_update")
+    @Version
+    @Column(name = "dt_update")
     private LocalDateTime dtUpdate;
 
-    private Status status;
-    private ReportType type;
+    private String status;
+    private String type;
     private String description;
+
+    @Convert(converter = ParamsToStringConverter.class)
     private Params params;
 
-    @JsonIgnore
+    @Column(name = "\"user\"", nullable = false)
     private String user;
 
     public UUID getId() {
@@ -50,19 +54,19 @@ public class Report {
         this.dtUpdate = dtUpdate;
     }
 
-    public Status getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
-    public ReportType getType() {
+    public String getType() {
         return type;
     }
 
-    public void setType(ReportType type) {
+    public void setType(String type) {
         this.type = type;
     }
 
@@ -91,49 +95,49 @@ public class Report {
     }
 
     public static class Builder {
-        private final Report report;
+        private final ReportEntity entity;
 
         private Builder() {
-            this.report = new Report();
+            this.entity = new ReportEntity();
         }
 
         public Builder setId(UUID id) {
-            this.report.id = id;
+            this.entity.id = id;
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.report.dtCreate = dtCreate;
+            this.entity.dtCreate = dtCreate;
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.report.dtUpdate = dtUpdate;
+            this.entity.dtUpdate = dtUpdate;
             return this;
         }
 
-        public Builder setStatus(Status status) {
-            this.report.status = status;
+        public Builder setStatus(String status) {
+            this.entity.status = status;
             return this;
         }
 
-        public Builder setType(ReportType type) {
-            this.report.type = type;
+        public Builder setType(String type) {
+            this.entity.type = type;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.report.description = description;
+            this.entity.description = description;
             return this;
         }
 
         public Builder setParams(Params params) {
-            this.report.params = params;
+            this.entity.params = params;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.report.user = user;
+            this.entity.user = user;
             return this;
         }
 
@@ -141,8 +145,8 @@ public class Report {
             return new Builder();
         }
 
-        public Report build() {
-            return this.report;
+        public ReportEntity build() {
+            return this.entity;
         }
     }
 }

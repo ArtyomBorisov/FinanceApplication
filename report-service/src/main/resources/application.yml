@@ -5,12 +5,21 @@ spring:
     username: "${spring.datasource.username}"
     password: "${spring.datasource.password}"
 
+font_name: Calibri
+default_day_interval: 90
+
 account_url : http://account-service:8080/account
 operation_backend_url : http://account-service:8080/backend/operation
 account_backend_url : http://account-service:8080/backend/account
-classifier_currency_backend_url : http://classifier-service:8080/backend/classifier/currency
-classifier_category_backend_url : http://classifier-service:8080/backend/classifier/operation/category
+currency_backend_url : http://classifier-service:8080/backend/classifier/currency
+category_backend_url : http://classifier-service:8080/backend/classifier/operation/category
 
-font_name : Calibri
-default_day_interval : 90
-
+#server:
+#  port: 8084
+#
+#account_url : http://localhost:8082/account
+#currency_url : http://localhost:8080/classifier/currency
+#operation_backend_url : http://localhost:8082/backend/operation
+#account_backend_url : http://localhost:8082/backend/account
+#currency_backend_url : http://localhost:8080/backend/classifier/currency
+#category_backend_url : http://localhost:8080/backend/classifier/operation/category
