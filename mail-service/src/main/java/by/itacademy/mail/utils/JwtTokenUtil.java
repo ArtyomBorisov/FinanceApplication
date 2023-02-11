@@ -1,4 +1,4 @@
-package by.itacademy.mail.controller.web.controllers.utils;
+package by.itacademy.mail.utils;
 
 import io.jsonwebtoken.*;
 import org.springframework.security.core.userdetails.UserDetails;

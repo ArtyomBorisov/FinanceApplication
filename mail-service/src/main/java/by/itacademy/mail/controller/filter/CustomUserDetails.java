@@ -1,6 +1,6 @@
-package by.itacademy.mail.service;
+package by.itacademy.mail.controller.filter;
 
-import by.itacademy.mail.controller.web.controllers.utils.JwtTokenUtil;
+import by.itacademy.mail.utils.JwtTokenUtil;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

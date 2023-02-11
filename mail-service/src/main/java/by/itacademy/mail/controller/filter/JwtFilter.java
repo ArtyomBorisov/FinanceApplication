@@ -1,7 +1,6 @@
-package by.itacademy.mail.controller.web.controllers.filter;
+package by.itacademy.mail.controller.filter;
 
-import by.itacademy.mail.controller.web.controllers.utils.JwtTokenUtil;
-import by.itacademy.mail.service.CustomUserDetails;
+import by.itacademy.mail.utils.JwtTokenUtil;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;

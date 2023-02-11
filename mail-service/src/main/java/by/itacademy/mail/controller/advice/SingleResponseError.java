@@ -1,4 +1,4 @@
-package by.itacademy.mail.controller.web.controllers.advice;
+package by.itacademy.mail.controller.advice;
 
 public class SingleResponseError {
     private String logref;
