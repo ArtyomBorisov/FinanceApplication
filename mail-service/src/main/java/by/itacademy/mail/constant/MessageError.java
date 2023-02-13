@@ -4,8 +4,6 @@ public final class MessageError {
     private MessageError() {
     }
 
-    public static final String ERROR = "error";
-
     public static final String REPORT_GETTING_EXCEPTION = "Ошибка получения отчёта";
 
     public static final String INCORRECT_PARAMS

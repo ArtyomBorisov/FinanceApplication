@@ -1,9 +1,14 @@
 package by.itacademy.account.scheduler.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.util.UUID;
 
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"account", "description", "value", "currency", "category"})
 public class Operation {
     private UUID account;
     private String description;
@@ -66,36 +71,36 @@ public class Operation {
         private final Operation operation;
 
         private Builder() {
-            this.operation = new Operation();
+            operation = new Operation();
         }
 
         public Builder setAccount(UUID account) {
-            this.operation.account = account;
+            operation.account = account;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.operation.description = description;
+            operation.description = description;
             return this;
         }
 
         public Builder setValue(double value) {
-            this.operation.value = value;
+            operation.value = value;
             return this;
         }
 
         public Builder setCurrency(UUID currency) {
-            this.operation.currency = currency;
+            operation.currency = currency;
             return this;
         }
 
         public Builder setCategory(UUID category) {
-            this.operation.category = category;
+            operation.category = category;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.operation.user = user;
+            operation.user = user;
             return this;
         }
 
@@ -104,7 +109,7 @@ public class Operation {
         }
 
         public Operation build() {
-            return this.operation;
+            return operation;
         }
     }
 }

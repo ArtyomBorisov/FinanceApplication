@@ -6,16 +6,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "account", schema = "app", uniqueConstraints = @UniqueConstraint(columnNames = {"title", "user"}))
-public class AccountEntity {
-    @Id
-    private UUID id;
-
-    @Column(name = "dt_create", nullable = false, updatable = false)
-    private LocalDateTime dtCreate;
-
-    @Version
-    @Column(name = "dt_update", nullable = false)
-    private LocalDateTime dtUpdate;
+public class AccountEntity extends BaseEntity {
 
     @Column(nullable = false)
     private String title;
@@ -34,30 +25,6 @@ public class AccountEntity {
 
     @Column(name = "\"user\"", nullable = false)
     private String user;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDtCreate() {
-        return dtCreate;
-    }
-
-    public void setDtCreate(LocalDateTime dtCreate) {
-        this.dtCreate = dtCreate;
-    }
-
-    public LocalDateTime getDtUpdate() {
-        return dtUpdate;
-    }
-
-    public void setDtUpdate(LocalDateTime dtUpdate) {
-        this.dtUpdate = dtUpdate;
-    }
 
     public String getTitle() {
         return title;
@@ -79,9 +46,8 @@ public class AccountEntity {
         return balance;
     }
 
-    public AccountEntity setBalance(BalanceEntity balance) {
+    public void setBalance(BalanceEntity balance) {
         this.balance = balance;
-        return this;
     }
 
     public String getType() {
@@ -109,54 +75,54 @@ public class AccountEntity {
     }
 
     public static class Builder {
-        private AccountEntity entity;
+        private final AccountEntity entity;
 
         private Builder() {
-            this.entity = new AccountEntity();
+            entity = new AccountEntity();
         }
 
         public Builder setId(UUID id) {
-            this.entity.id = id;
+            entity.setId(id);
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.entity.dtCreate = dtCreate;
+            entity.setDtCreate(dtCreate);
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.entity.dtUpdate = dtUpdate;
+            entity.setDtUpdate(dtUpdate);
             return this;
         }
 
         public Builder setTitle(String title) {
-            this.entity.title = title;
+            entity.title = title;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.entity.description = description;
+            entity.description = description;
             return this;
         }
 
         public Builder setBalance(BalanceEntity balance) {
-            this.entity.balance = balance;
+            entity.balance = balance;
             return this;
         }
 
         public Builder setType(String type) {
-            this.entity.type = type;
+            entity.type = type;
             return this;
         }
 
         public Builder setCurrency(UUID currency) {
-            this.entity.currency = currency;
+            entity.currency = currency;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.entity.user = user;
+            entity.user = user;
             return this;
         }
 
@@ -165,7 +131,7 @@ public class AccountEntity {
         }
 
         public AccountEntity build() {
-            return this.entity;
+            return entity;
         }
     }
 }

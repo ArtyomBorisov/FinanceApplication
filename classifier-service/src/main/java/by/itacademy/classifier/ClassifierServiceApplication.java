@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "by.itacademy.classifier.repository")
+@EnableJpaRepositories(basePackages = "by.itacademy.classifier.dao")
 public class ClassifierServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(ClassifierServiceApplication.class, args);

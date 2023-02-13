@@ -1,7 +1,5 @@
 package by.itacademy.classifier.validation.helper.impl;
 
-import by.itacademy.classifier.constant.FieldName;
-import by.itacademy.classifier.constant.MessageError;
 import by.itacademy.classifier.dao.CategoryRepository;
 import by.itacademy.classifier.validation.helper.CategoryValidatorHelper;
 import org.springframework.stereotype.Component;
@@ -9,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.ConstraintValidatorContext;
 import java.util.UUID;
+
+import static by.itacademy.classifier.constant.FieldName.TITLE;
+import static by.itacademy.classifier.constant.MessageError.*;
 
 @Component
 @Transactional(readOnly = true)
@@ -23,12 +24,12 @@ public class CategoryValidatorHelperImpl implements CategoryValidatorHelper {
     @Override
     public boolean isTitleValid(String title, ConstraintValidatorContext context) {
         if (title == null || title.isEmpty()) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.TITLE, context);
+            addConstraintViolation(MISSING_FIELD, TITLE, context);
             return false;
         }
 
         if (repository.findByTitle(title).isPresent()) {
-            addConstraintViolation(MessageError.NO_UNIQUE_FIELD, FieldName.TITLE, context);
+            addConstraintViolation(NO_UNIQUE_FIELD, TITLE, context);
             return false;
         }
 
@@ -38,7 +39,7 @@ public class CategoryValidatorHelperImpl implements CategoryValidatorHelper {
     @Override
     public boolean isCategoryIdExist(UUID id, ConstraintValidatorContext context) {
         if (!repository.existsCategoryEntityById(id)) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, id.toString(), context);
+            addConstraintViolation(ID_NOT_EXIST, id.toString(), context);
             return false;
         }
 

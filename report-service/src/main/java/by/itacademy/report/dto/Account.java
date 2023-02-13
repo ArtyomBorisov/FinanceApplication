@@ -51,45 +51,4 @@ public class Account {
     public void setCurrency(UUID currency) {
         this.currency = currency;
     }
-
-    public static class Builder {
-        private final Account account;
-
-        private Builder() {
-            this.account = new Account();
-        }
-
-        public Builder setId(UUID id) {
-            this.account.id = id;
-            return this;
-        }
-
-        public Builder setTitle(String title) {
-            this.account.title = title;
-            return this;
-        }
-
-        public Builder setBalance(double balance) {
-            this.account.balance = balance;
-            return this;
-        }
-
-        public Builder setType(String accountType) {
-            this.account.type = accountType;
-            return this;
-        }
-
-        public Builder setCurrency(UUID currency) {
-            this.account.currency = currency;
-            return this;
-        }
-
-        public static Builder createBuilder() {
-            return new Builder();
-        }
-
-        public Account build() {
-            return this.account;
-        }
-    }
 }

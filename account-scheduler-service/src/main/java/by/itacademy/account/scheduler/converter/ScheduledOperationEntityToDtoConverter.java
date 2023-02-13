@@ -12,24 +12,28 @@ import org.springframework.stereotype.Component;
 public class ScheduledOperationEntityToDtoConverter implements Converter<ScheduledOperationEntity, ScheduledOperation> {
     @Override
     public ScheduledOperation convert(ScheduledOperationEntity entity) {
+        Schedule schedule = Schedule.Builder.createBuilder()
+                .setStartTime(entity.getStartTime())
+                .setStopTime(entity.getStopTime())
+                .setInterval(entity.getInterval())
+                .setTimeUnit(TimeUnit.valueOf(entity.getTimeUnit()))
+                .build();
+
+        Operation operation = Operation.Builder.createBuilder()
+                .setAccount(entity.getAccount())
+                .setDescription(entity.getDescription())
+                .setValue(entity.getValue())
+                .setCurrency(entity.getCurrency())
+                .setCategory(entity.getCategory())
+                .setUser(entity.getUser())
+                .build();
+
         return ScheduledOperation.Builder.createBuilder()
                 .setId(entity.getId())
                 .setDtCreate(entity.getDtCreate())
                 .setDtUpdate(entity.getDtUpdate())
-                .setSchedule(Schedule.Builder.createBuilder()
-                        .setStartTime(entity.getStartTime())
-                        .setStopTime(entity.getStopTime())
-                        .setInterval(entity.getInterval())
-                        .setTimeUnit(TimeUnit.valueOf(entity.getTimeUnit()))
-                        .build())
-                .setOperation(Operation.Builder.createBuilder()
-                        .setAccount(entity.getAccount())
-                        .setDescription(entity.getDescription())
-                        .setValue(entity.getValue())
-                        .setCurrency(entity.getCurrency())
-                        .setCategory(entity.getCategory())
-                        .setUser(entity.getUser())
-                        .build())
+                .setSchedule(schedule)
+                .setOperation(operation)
                 .build();
     }
 }

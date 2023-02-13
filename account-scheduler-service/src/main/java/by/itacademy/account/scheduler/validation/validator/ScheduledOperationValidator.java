@@ -1,7 +1,5 @@
 package by.itacademy.account.scheduler.validation.validator;
 
-import by.itacademy.account.scheduler.constant.FieldName;
-import by.itacademy.account.scheduler.constant.MessageError;
 import by.itacademy.account.scheduler.dto.Operation;
 import by.itacademy.account.scheduler.dto.Schedule;
 import by.itacademy.account.scheduler.dto.ScheduledOperation;
@@ -15,6 +13,9 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import static by.itacademy.account.scheduler.constant.FieldName.*;
+import static by.itacademy.account.scheduler.constant.MessageError.*;
 
 public class ScheduledOperationValidator implements ConstraintValidator<CustomValid, ScheduledOperation> {
 
@@ -50,7 +51,7 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
 
     private boolean isOperationValid(Operation operation, ConstraintValidatorContext context) {
         if (operation == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.OPERATION, context);
+            addConstraintViolation(MISSING_FIELD, OPERATION, context);
             return false;
         }
 
@@ -58,13 +59,13 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
         UUID idCategory = operation.getCategory();
         UUID idCurrency = operation.getCurrency();
 
-        boolean accountValid = checkId(idAccount, accountUrl, FieldName.ID_ACCOUNT, context);
-        boolean categoryValid = checkId(idCategory, categoryUrl, FieldName.ID_CATEGORY, context);
-        boolean currencyValid = checkId(idCurrency, currencyUrl, FieldName.ID_CURRENCY, context);
+        boolean accountValid = checkId(idAccount, accountUrl, ID_ACCOUNT, context);
+        boolean categoryValid = checkId(idCategory, categoryUrl, ID_CATEGORY, context);
+        boolean currencyValid = checkId(idCurrency, currencyUrl, ID_CURRENCY, context);
 
         boolean valueValid = true;
         if (operation.getValue() == 0) {
-            addConstraintViolation(MessageError.INCORRECT_OPERATION_VALUE, FieldName.VALUE, context);
+            addConstraintViolation(INCORRECT_OPERATION_VALUE, VALUE, context);
             valueValid = false;
         }
 
@@ -73,7 +74,7 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
 
     private boolean isScheduleValid(Schedule schedule, ConstraintValidatorContext context) {
         if (schedule == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.SCHEDULE, context);
+            addConstraintViolation(MISSING_FIELD, SCHEDULE, context);
             return false;
         }
 
@@ -81,19 +82,19 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
 
         long interval = schedule.getInterval();
         if (interval < 0) {
-            addConstraintViolation(MessageError.INVALID_INTERVAL, FieldName.INTERVAL, context);
+            addConstraintViolation(INVALID_INTERVAL, INTERVAL, context);
             valid = false;
         }
 
         if (interval > 0 && schedule.getTimeUnit() == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.TIME_UNIT, context);
+            addConstraintViolation(MISSING_FIELD, TIME_UNIT, context);
             valid = false;
         }
 
         LocalDateTime start = schedule.getStartTime();
         LocalDateTime stop = schedule.getStopTime();
         if (stop != null && start != null && start.isAfter(stop)) {
-            addConstraintViolation(MessageError.INCORRECT_DATES, FieldName.DATES, context);
+            addConstraintViolation(INCORRECT_DATES, DATES, context);
             valid = false;
         }
 
@@ -106,10 +107,10 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
         boolean valid = true;
 
         if (id == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, field, context);
+            addConstraintViolation(MISSING_FIELD, field, context);
             valid = false;
         } else if (!isObjectExist(url, id)) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, field, context);
+            addConstraintViolation(ID_NOT_EXIST, field, context);
             valid = false;
         }
 

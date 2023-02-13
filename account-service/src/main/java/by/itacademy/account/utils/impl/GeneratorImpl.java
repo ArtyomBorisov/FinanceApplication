@@ -3,7 +3,6 @@ package by.itacademy.account.utils.impl;
 import by.itacademy.account.utils.Generator;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

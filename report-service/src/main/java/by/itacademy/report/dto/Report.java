@@ -4,20 +4,21 @@ import by.itacademy.report.constant.ReportType;
 import by.itacademy.report.constant.Status;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"uuid", "dt_create", "dt_update", "status", "type", "description", "params"})
 public class Report {
     @JsonProperty("uuid")
     private UUID id;
 
-    @JsonProperty("dt_create")
     private LocalDateTime dtCreate;
-
-    @JsonProperty("dt_update")
     private LocalDateTime dtUpdate;
-
     private Status status;
     private ReportType type;
     private String description;
@@ -94,46 +95,46 @@ public class Report {
         private final Report report;
 
         private Builder() {
-            this.report = new Report();
+            report = new Report();
         }
 
         public Builder setId(UUID id) {
-            this.report.id = id;
+            report.id = id;
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.report.dtCreate = dtCreate;
+            report.dtCreate = dtCreate;
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.report.dtUpdate = dtUpdate;
+            report.dtUpdate = dtUpdate;
             return this;
         }
 
         public Builder setStatus(Status status) {
-            this.report.status = status;
+            report.status = status;
             return this;
         }
 
         public Builder setType(ReportType type) {
-            this.report.type = type;
+            report.type = type;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.report.description = description;
+            report.description = description;
             return this;
         }
 
         public Builder setParams(Params params) {
-            this.report.params = params;
+            report.params = params;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.report.user = user;
+            report.user = user;
             return this;
         }
 
@@ -142,7 +143,7 @@ public class Report {
         }
 
         public Report build() {
-            return this.report;
+            return report;
         }
     }
 }

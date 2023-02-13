@@ -1,7 +1,5 @@
 package by.itacademy.report.controller.advice;
 
-import by.itacademy.report.constant.MessageError;
-import by.itacademy.report.exception.ValidationError;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -16,12 +14,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static by.itacademy.report.constant.MessageError.INCORRECT_PARAMS;
+import static by.itacademy.report.constant.MessageError.SERVER_ERROR;
+
 @ControllerAdvice
 public class ExceptionAdvice {
 
-    private final String ERROR = "error";
-    private final String STRUCTURED_ERROR = "structured_error";
-    private final String LOGGER_MESSAGE = "{}: {}";
+    private static final String LOGGER_MESSAGE = "{}: {}";
     private final Logger logger = LogManager.getLogger();
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -32,30 +31,28 @@ public class ExceptionAdvice {
         int size = violations.size();
 
         if (size == 0) {
-            return new ResponseEntity<>(new SingleResponseError(ERROR,
-                    MessageError.INCORRECT_PARAMS),
-                    HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    new SingleResponseError(INCORRECT_PARAMS), HttpStatus.BAD_REQUEST);
 
-        } else {
-            Function<ConstraintViolation<?>, ValidationError> function =
-                    violation -> new ValidationError(
-                            violation.getPropertyPath().toString(),
-                            violation.getMessage());
-
-            List<ValidationError> errors = violations.stream()
-                    .map(function)
-                    .collect(Collectors.toList());
-
-            return new ResponseEntity<>(new MultipleResponseError(STRUCTURED_ERROR, errors),
-                    HttpStatus.BAD_REQUEST);
         }
+        Function<ConstraintViolation<?>, ValidationError> function =
+                violation -> new ValidationError(
+                        violation.getPropertyPath().toString(),
+                        violation.getMessage());
+
+        List<ValidationError> errors = violations.stream()
+                .map(function)
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(
+                new MultipleResponseError(errors), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> exceptionHandler(Exception e) {
         logger.error(LOGGER_MESSAGE, e.getClass().getSimpleName(), e.getMessage());
 
-        return new ResponseEntity<>(new SingleResponseError(ERROR, MessageError.SERVER_ERROR),
-                HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(
+                new SingleResponseError(SERVER_ERROR), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

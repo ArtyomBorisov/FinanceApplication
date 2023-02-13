@@ -6,43 +6,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "category", schema = "app")
-public class CategoryEntity {
-    @Id
-    private UUID id;
-
-    @Column(name = "dt_create", nullable = false, updatable = false)
-    private LocalDateTime dtCreate;
-
-    @Version
-    @Column(name = "dt_update", nullable = false)
-    private LocalDateTime dtUpdate;
+public class CategoryEntity extends BaseEntity {
 
     @Column(nullable = false, unique = true, updatable = false)
     private String title;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDtCreate() {
-        return dtCreate;
-    }
-
-    public void setDtCreate(LocalDateTime dtCreate) {
-        this.dtCreate = dtCreate;
-    }
-
-    public LocalDateTime getDtUpdate() {
-        return dtUpdate;
-    }
-
-    public void setDtUpdate(LocalDateTime dtUpdate) {
-        this.dtUpdate = dtUpdate;
-    }
 
     public String getTitle() {
         return title;
@@ -53,29 +20,29 @@ public class CategoryEntity {
     }
 
     public static class Builder {
-        private final CategoryEntity categoryEntity;
+        private final CategoryEntity entity;
 
         private Builder() {
-            this.categoryEntity = new CategoryEntity();
+            entity = new CategoryEntity();
         }
 
         public Builder setId(UUID id) {
-            this.categoryEntity.id = id;
+            entity.setId(id);
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.categoryEntity.dtCreate = dtCreate;
+            entity.setDtCreate(dtCreate);
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.categoryEntity.dtUpdate = dtUpdate;
+            entity.setDtUpdate(dtUpdate);
             return this;
         }
 
         public Builder setTitle(String title) {
-            this.categoryEntity.title = title;
+            entity.title = title;
             return this;
         }
 
@@ -84,7 +51,7 @@ public class CategoryEntity {
         }
 
         public CategoryEntity build() {
-            return this.categoryEntity;
+            return entity;
         }
     }
 }

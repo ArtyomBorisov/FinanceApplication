@@ -1,20 +1,21 @@
 package by.itacademy.account.scheduler.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"uuid", "dt_create", "dt_update", "schedule", "operation"})
 public class ScheduledOperation {
     @JsonProperty("uuid")
     private UUID id;
 
-    @JsonProperty("dt_create")
     private LocalDateTime dtCreate;
-
-    @JsonProperty("dt_update")
     private LocalDateTime dtUpdate;
-
     private Schedule schedule;
     private Operation operation;
 
@@ -62,31 +63,31 @@ public class ScheduledOperation {
         private final ScheduledOperation scheduledOperation;
 
         private Builder() {
-            this.scheduledOperation = new ScheduledOperation();
+            scheduledOperation = new ScheduledOperation();
         }
 
         public Builder setId(UUID id) {
-            this.scheduledOperation.id = id;
+            scheduledOperation.id = id;
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.scheduledOperation.dtCreate = dtCreate;
+            scheduledOperation.dtCreate = dtCreate;
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.scheduledOperation.dtUpdate = dtUpdate;
+            scheduledOperation.dtUpdate = dtUpdate;
             return this;
         }
 
         public Builder setSchedule(Schedule schedule) {
-            this.scheduledOperation.schedule = schedule;
+            scheduledOperation.schedule = schedule;
             return this;
         }
 
         public Builder setOperation(Operation operation) {
-            this.scheduledOperation.operation = operation;
+            scheduledOperation.operation = operation;
             return this;
         }
 
@@ -95,7 +96,7 @@ public class ScheduledOperation {
         }
 
         public ScheduledOperation build() {
-            return this.scheduledOperation;
+            return scheduledOperation;
         }
     }
 }

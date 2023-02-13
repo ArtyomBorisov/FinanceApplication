@@ -1,7 +1,5 @@
 package by.itacademy.account.validation.validator.helper.impl;
 
-import by.itacademy.account.constant.FieldName;
-import by.itacademy.account.constant.MessageError;
 import by.itacademy.account.dao.OperationRepository;
 import by.itacademy.account.dao.entity.AccountEntity;
 import by.itacademy.account.dao.entity.OperationEntity;
@@ -12,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.validation.ConstraintValidatorContext;
 import java.util.Optional;
 import java.util.UUID;
+
+import static by.itacademy.account.constant.FieldName.*;
+import static by.itacademy.account.constant.MessageError.ID_NOT_EXIST;
+import static by.itacademy.account.constant.MessageError.INCORRECT_OPERATION_VALUE;
 
 @Component
 @Transactional(readOnly = true)
@@ -26,7 +28,7 @@ public class OperationValidatorHelperImpl implements OperationValidatorHelper {
     @Override
     public boolean isValueValid(double value, ConstraintValidatorContext context) {
         if (value == 0) {
-            addConstraintViolation(MessageError.INCORRECT_OPERATION_VALUE, FieldName.VALUE, context);
+            addConstraintViolation(INCORRECT_OPERATION_VALUE, VALUE, context);
             return false;
         }
         return true;
@@ -44,7 +46,7 @@ public class OperationValidatorHelperImpl implements OperationValidatorHelper {
         Optional<OperationEntity> optional = repository.findById(idOperation);
 
         if (optional.isEmpty()) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, FieldName.ID_OPERATION, context);
+            addConstraintViolation(ID_NOT_EXIST, ID_OPERATION, context);
             return false;
         }
 
@@ -55,7 +57,7 @@ public class OperationValidatorHelperImpl implements OperationValidatorHelper {
 
         if (idAccount.compareTo(idAccountFromDB) != 0
                 || userLogin.compareTo(userLoginFromDB) != 0) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, FieldName.ID_ACCOUNT, context);
+            addConstraintViolation(ID_NOT_EXIST, ID_ACCOUNT, context);
             return false;
         }
 

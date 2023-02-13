@@ -16,5 +16,5 @@ public interface CurrencyRepository extends JpaRepository<CurrencyEntity, UUID> 
     Optional<CurrencyEntity> findByTitle(String title);
     Page<CurrencyEntity> findByIdInOrderByTitle(Collection<UUID> collectionId, Pageable pageable);
     Page<CurrencyEntity> findByOrderByTitle(Pageable pageable);
-    boolean existsCategoryEntityById(UUID id);
+    boolean existsCurrencyEntityById(UUID id);
 }

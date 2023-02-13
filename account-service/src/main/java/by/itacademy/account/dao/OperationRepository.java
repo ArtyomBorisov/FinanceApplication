@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -28,11 +28,11 @@ public interface OperationRepository extends JpaRepository<OperationEntity, UUID
         return (entity, cq, cb) -> cb.in(entity.get("category")).value(categories);
     }
 
-    static Specification<OperationEntity> dateGreaterThan(LocalDate from) {
+    static Specification<OperationEntity> dateGreaterThan(LocalDateTime from) {
         return (entity, cq, cb) -> cb.greaterThan(entity.get("date"), from);
     }
 
-    static Specification<OperationEntity> dateLessThan(LocalDate to) {
+    static Specification<OperationEntity> dateLessThan(LocalDateTime to) {
         return (entity, cq, cb) -> cb.lessThan(entity.get("date"), to);
     }
 }

@@ -141,10 +141,4 @@ public class AccountServiceImpl implements AccountService {
 
         return accountRepository.existsAccountEntityByUserAndId(login, id);
     }
-
-    private void checkDtUpdate(LocalDateTime dateTime1, LocalDateTime dateTime2) {
-        if (dateTime1.compareTo(dateTime2) != 0) {
-            throw new OptimisticLockException();
-        }
-    }
 }

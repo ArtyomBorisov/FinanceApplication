@@ -2,53 +2,25 @@ package by.itacademy.account.dto;
 
 import by.itacademy.account.constant.AccountType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Account {
-    @JsonProperty("uuid")
-    private UUID id;
-
-    @JsonProperty("dt_create")
-    private LocalDateTime dtCreate;
-
-    @JsonProperty("dt_update")
-    private LocalDateTime dtUpdate;
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"uuid", "dt_create", "dt_update", "title", "description", "balance", "type", "currency"})
+public class Account extends BaseDto {
 
     private String title;
     private String description;
     private double balance;
-    private AccountType accountType;
+    private AccountType type;
     private UUID currency;
 
     @JsonIgnore
     private String user;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDtCreate() {
-        return dtCreate;
-    }
-
-    public void setDtCreate(LocalDateTime dtCreate) {
-        this.dtCreate = dtCreate;
-    }
-
-    public LocalDateTime getDtUpdate() {
-        return dtUpdate;
-    }
-
-    public void setDtUpdate(LocalDateTime dtUpdate) {
-        this.dtUpdate = dtUpdate;
-    }
 
     public String getTitle() {
         return title;
@@ -75,11 +47,11 @@ public class Account {
     }
 
     public AccountType getType() {
-        return accountType;
+        return type;
     }
 
-    public void setType(AccountType accountType) {
-        this.accountType = accountType;
+    public void setType(AccountType type) {
+        this.type = type;
     }
 
     public UUID getCurrency() {
@@ -99,54 +71,54 @@ public class Account {
     }
 
     public static class Builder {
-        private Account account;
+        private final Account account;
 
         private Builder() {
-            this.account = new Account();
+            account = new Account();
         }
 
         public Builder setId(UUID id) {
-            this.account.id = id;
+            account.setId(id);
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.account.dtCreate = dtCreate;
+            account.setDtCreate(dtCreate);
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.account.dtUpdate = dtUpdate;
+            account.setDtUpdate(dtUpdate);
             return this;
         }
 
         public Builder setTitle(String title) {
-            this.account.title = title;
+            account.title = title;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.account.description = description;
+            account.description = description;
             return this;
         }
 
         public Builder setBalance(double balance) {
-            this.account.balance = balance;
+            account.balance = balance;
             return this;
         }
 
         public Builder setType(AccountType accountType) {
-            this.account.accountType = accountType;
+            account.type = accountType;
             return this;
         }
 
         public Builder setCurrency(UUID currency) {
-            this.account.currency = currency;
+            account.currency = currency;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.account.user = user;
+            account.user = user;
             return this;
         }
 
@@ -155,7 +127,7 @@ public class Account {
         }
 
         public Account build() {
-            return this.account;
+            return account;
         }
     }
 }

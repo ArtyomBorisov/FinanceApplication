@@ -6,46 +6,13 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "currency", schema = "app")
-public class CurrencyEntity {
-    @Id
-    private UUID id;
-
-    @Column(name = "dt_create", nullable = false, updatable = false)
-    private LocalDateTime dtCreate;
-
-    @Version
-    @Column(name = "dt_update", nullable = false)
-    private LocalDateTime dtUpdate;
+public class CurrencyEntity extends BaseEntity {
 
     @Column(nullable = false, unique = true, updatable = false)
     private String title;
 
     @Column(nullable = false)
     private String description;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDtCreate() {
-        return dtCreate;
-    }
-
-    public void setDtCreate(LocalDateTime dtCreate) {
-        this.dtCreate = dtCreate;
-    }
-
-    public LocalDateTime getDtUpdate() {
-        return dtUpdate;
-    }
-
-    public void setDtUpdate(LocalDateTime dtUpdate) {
-        this.dtUpdate = dtUpdate;
-    }
 
     public String getTitle() {
         return title;
@@ -64,34 +31,34 @@ public class CurrencyEntity {
     }
 
     public static class Builder {
-        private final CurrencyEntity currencyEntity;
+        private final CurrencyEntity entity;
 
         private Builder() {
-            this.currencyEntity = new CurrencyEntity();
+            entity = new CurrencyEntity();
         }
 
         public Builder setId(UUID id) {
-            this.currencyEntity.id = id;
+            entity.setId(id);
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.currencyEntity.dtCreate = dtCreate;
+            entity.setDtCreate(dtCreate);
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.currencyEntity.dtUpdate = dtUpdate;
+            entity.setDtUpdate(dtUpdate);
             return this;
         }
 
         public Builder setTitle(String title) {
-            this.currencyEntity.title = title;
+            entity.title = title;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.currencyEntity.description = description;
+            entity.description = description;
             return this;
         }
 
@@ -100,7 +67,7 @@ public class CurrencyEntity {
         }
 
         public CurrencyEntity build() {
-            return this.currencyEntity;
+            return entity;
         }
     }
 }

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -105,12 +106,14 @@ public class OperationServiceImpl implements OperationService {
             to = generator.now().toLocalDate();
         }
         if (from == null) {
-            from = LocalDate.from(to).minusDays(defaultDayInterval);
+            from = to.minusDays(defaultDayInterval);
         }
 
+        LocalDateTime timeFrom = LocalDateTime.of(from, LocalTime.MIN);
+        LocalDateTime timeTo = LocalDateTime.of(to, LocalTime.MAX);
         Specification<OperationEntity> specification = Specification
-                .where(OperationRepository.dateGreaterThan(from))
-                .and(OperationRepository.dateLessThan(to));
+                .where(OperationRepository.dateGreaterThan(timeFrom))
+                .and(OperationRepository.dateLessThan(timeTo));
 
         if (accounts != null && !accounts.isEmpty()) {
             specification.and(OperationRepository.accountsIdIn(accounts));

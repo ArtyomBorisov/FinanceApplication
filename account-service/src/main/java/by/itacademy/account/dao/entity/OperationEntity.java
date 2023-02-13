@@ -6,17 +6,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "operation", schema = "app")
-public class OperationEntity {
-    @Id
-    @Column(updatable = false)
-    private UUID id;
-
-    @Column(name = "dt_create", nullable = false, updatable = false)
-    private LocalDateTime dtCreate;
-
-    @Version
-    @Column(name = "dt_update", nullable = false)
-    private LocalDateTime dtUpdate;
+public class OperationEntity extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime date;
@@ -27,7 +17,7 @@ public class OperationEntity {
     private UUID category;
 
     @Column(nullable = false)
-    private double value;
+    private Double value;
 
     @Column(nullable = false)
     private UUID currency;
@@ -35,30 +25,6 @@ public class OperationEntity {
     @ManyToOne
     @JoinColumn(name = "account", nullable = false, updatable = false)
     private AccountEntity accountEntity;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDtCreate() {
-        return dtCreate;
-    }
-
-    public void setDtCreate(LocalDateTime dtCreate) {
-        this.dtCreate = dtCreate;
-    }
-
-    public LocalDateTime getDtUpdate() {
-        return dtUpdate;
-    }
-
-    public void setDtUpdate(LocalDateTime dtUpdate) {
-        this.dtUpdate = dtUpdate;
-    }
 
     public LocalDateTime getDate() {
         return date;
@@ -84,11 +50,11 @@ public class OperationEntity {
         this.category = category;
     }
 
-    public double getValue() {
+    public Double getValue() {
         return value;
     }
 
-    public void setValue(double value) {
+    public void setValue(Double value) {
         this.value = value;
     }
 
@@ -104,60 +70,59 @@ public class OperationEntity {
         return accountEntity;
     }
 
-    public OperationEntity setAccountEntity(AccountEntity accountEntity) {
+    public void setAccountEntity(AccountEntity accountEntity) {
         this.accountEntity = accountEntity;
-        return this;
     }
 
     public static class Builder {
-        private OperationEntity entity;
+        private final OperationEntity entity;
 
         private Builder() {
-            this.entity = new OperationEntity();
+            entity = new OperationEntity();
         }
 
         public Builder setId(UUID id) {
-            this.entity.id = id;
+            entity.setId(id);
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.entity.dtCreate = dtCreate;
+            entity.setDtCreate(dtCreate);
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.entity.dtUpdate = dtUpdate;
+            entity.setDtUpdate(dtUpdate);
             return this;
         }
 
         public Builder setDate(LocalDateTime date) {
-            this.entity.date = date;
+            entity.date = date;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.entity.description = description;
+            entity.description = description;
             return this;
         }
 
         public Builder setCategory(UUID category) {
-            this.entity.category = category;
+            entity.category = category;
             return this;
         }
 
         public Builder setValue(double value) {
-            this.entity.value = value;
+            entity.value = value;
             return this;
         }
 
         public Builder setCurrency(UUID currency) {
-            this.entity.currency = currency;
+            entity.currency = currency;
             return this;
         }
 
         public Builder setAccountEntity(AccountEntity accountEntity) {
-            this.entity.accountEntity = accountEntity;
+            entity.accountEntity = accountEntity;
             return this;
         }
 
@@ -166,7 +131,7 @@ public class OperationEntity {
         }
 
         public OperationEntity build() {
-            return this.entity;
+            return entity;
         }
     }
 }

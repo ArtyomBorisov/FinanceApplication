@@ -14,6 +14,8 @@ public final class MessageError {
 
     public static final String PAGE_NUMBER = "Номер страницы не может быть меньше 0";
 
+    public static final String FORBIDDEN = "Forbidden";
+
     public static final String INCORRECT_PARAMS
             = "Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз";
 

@@ -20,7 +20,7 @@ public class MailController {
         this.mailServiceImpl = mailServiceImpl;
     }
 
-    @GetMapping
+    @PostMapping
     public ResponseEntity<?> get(
             @PathVariable(name = "uuid") UUID id,
             @RequestBody @Valid Email email) throws MessagingException {

@@ -1,5 +1,6 @@
-package by.itacademy.account.utils.impl;
+package by.itacademy.account.scheduler.controller.filter;
 
+import by.itacademy.account.scheduler.utils.impl.JwtTokenUtil;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -25,7 +26,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return login;
+        return this.login;
     }
 
     @Override

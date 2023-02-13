@@ -13,13 +13,3 @@ operation_backend_url : http://account-service:8080/backend/operation
 account_backend_url : http://account-service:8080/backend/account
 currency_backend_url : http://classifier-service:8080/backend/classifier/currency
 category_backend_url : http://classifier-service:8080/backend/classifier/operation/category
-
-#server:
-#  port: 8084
-#
-#account_url : http://localhost:8082/account
-#currency_url : http://localhost:8080/classifier/currency
-#operation_backend_url : http://localhost:8082/backend/operation
-#account_backend_url : http://localhost:8082/backend/account
-#currency_backend_url : http://localhost:8080/backend/classifier/currency
-#category_backend_url : http://localhost:8080/backend/classifier/operation/category

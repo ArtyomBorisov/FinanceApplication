@@ -1,45 +1,17 @@
 package by.itacademy.classifier.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Category {
-    @JsonProperty("uuid")
-    private UUID id;
-
-    @JsonProperty("dt_create")
-    private LocalDateTime dtCreate;
-
-    @JsonProperty("dt_update")
-    private LocalDateTime dtUpdate;
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"uuid", "dt_create", "dt_update", "title"})
+public class Category extends BaseDto {
 
     private String title;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDtCreate() {
-        return dtCreate;
-    }
-
-    public void setDtCreate(LocalDateTime dtCreate) {
-        this.dtCreate = dtCreate;
-    }
-
-    public LocalDateTime getDtUpdate() {
-        return dtUpdate;
-    }
-
-    public void setDtUpdate(LocalDateTime dtUpdate) {
-        this.dtUpdate = dtUpdate;
-    }
 
     public String getTitle() {
         return title;
@@ -53,26 +25,26 @@ public class Category {
         private final Category category;
 
         private Builder() {
-            this.category = new Category();
+            category = new Category();
         }
 
         public Builder setId(UUID id) {
-            this.category.id = id;
+            category.setId(id);
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.category.dtCreate = dtCreate;
+            category.setDtCreate(dtCreate);
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.category.dtUpdate = dtUpdate;
+            category.setDtUpdate(dtUpdate);
             return this;
         }
 
         public Builder setTitle(String title) {
-            this.category.title = title;
+            category.title = title;
             return this;
         }
 
@@ -81,7 +53,7 @@ public class Category {
         }
 
         public Category build() {
-            return this.category;
+            return category;
         }
     }
 }

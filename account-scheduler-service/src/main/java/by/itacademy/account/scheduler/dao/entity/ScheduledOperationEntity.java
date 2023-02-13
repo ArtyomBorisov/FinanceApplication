@@ -23,15 +23,22 @@ public class ScheduledOperationEntity {
     @Column(name = "stop_time")
     private LocalDateTime stopTime;
 
-    private long interval;
+    private Long interval;
 
     @Column(name = "time_unit")
     private String timeUnit;
 
+    @Column(nullable = false)
     private UUID account;
     private String description;
-    private double value;
+
+    @Column(nullable = false)
+    private Double value;
+
+    @Column(nullable = false)
     private UUID currency;
+
+    @Column(nullable = false)
     private UUID category;
 
     @Column(name = "\"user\"")
@@ -77,11 +84,11 @@ public class ScheduledOperationEntity {
         this.stopTime = stopTime;
     }
 
-    public long getInterval() {
+    public Long getInterval() {
         return interval;
     }
 
-    public void setInterval(long interval) {
+    public void setInterval(Long interval) {
         this.interval = interval;
     }
 
@@ -109,11 +116,11 @@ public class ScheduledOperationEntity {
         this.description = description;
     }
 
-    public double getValue() {
+    public Double getValue() {
         return value;
     }
 
-    public void setValue(double value) {
+    public void setValue(Double value) {
         this.value = value;
     }
 
@@ -142,74 +149,74 @@ public class ScheduledOperationEntity {
     }
 
     public static class Builder {
-        private ScheduledOperationEntity scheduledOperationEntity;
+        private final ScheduledOperationEntity scheduledOperationEntity;
 
         private Builder() {
-            this.scheduledOperationEntity = new ScheduledOperationEntity();
+            scheduledOperationEntity = new ScheduledOperationEntity();
         }
 
         public Builder setId(UUID id) {
-            this.scheduledOperationEntity.id = id;
+            scheduledOperationEntity.id = id;
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.scheduledOperationEntity.dtCreate = dtCreate;
+            scheduledOperationEntity.dtCreate = dtCreate;
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.scheduledOperationEntity.dtUpdate = dtUpdate;
+            scheduledOperationEntity.dtUpdate = dtUpdate;
             return this;
         }
 
         public Builder setStartTime(LocalDateTime startTime) {
-            this.scheduledOperationEntity.startTime = startTime;
+            scheduledOperationEntity.startTime = startTime;
             return this;
         }
 
         public Builder setStopTime(LocalDateTime stopTime) {
-            this.scheduledOperationEntity.stopTime = stopTime;
+            scheduledOperationEntity.stopTime = stopTime;
             return this;
         }
 
         public Builder setInterval(long interval) {
-            this.scheduledOperationEntity.interval = interval;
+            scheduledOperationEntity.interval = interval;
             return this;
         }
 
         public Builder setTimeUnit(String timeUnit) {
-            this.scheduledOperationEntity.timeUnit = timeUnit;
+            scheduledOperationEntity.timeUnit = timeUnit;
             return this;
         }
 
         public Builder setAccount(UUID account) {
-            this.scheduledOperationEntity.account = account;
+            scheduledOperationEntity.account = account;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.scheduledOperationEntity.description = description;
+            scheduledOperationEntity.description = description;
             return this;
         }
 
         public Builder setValue(double value) {
-            this.scheduledOperationEntity.value = value;
+            scheduledOperationEntity.value = value;
             return this;
         }
 
         public Builder setCurrency(UUID currency) {
-            this.scheduledOperationEntity.currency = currency;
+            scheduledOperationEntity.currency = currency;
             return this;
         }
 
         public Builder setCategory(UUID category) {
-            this.scheduledOperationEntity.category = category;
+            scheduledOperationEntity.category = category;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.scheduledOperationEntity.user = user;
+            scheduledOperationEntity.user = user;
             return this;
         }
 
@@ -218,7 +225,7 @@ public class ScheduledOperationEntity {
         }
 
         public ScheduledOperationEntity build() {
-            return this.scheduledOperationEntity;
+            return scheduledOperationEntity;
         }
     }
 }

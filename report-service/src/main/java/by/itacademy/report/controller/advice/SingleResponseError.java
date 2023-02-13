@@ -1,11 +1,15 @@
 package by.itacademy.report.controller.advice;
 
 public class SingleResponseError {
-    private String logref;
+    private String logref = "error";
     private String message;
 
     public SingleResponseError(String logref, String message) {
         this.logref = logref;
+        this.message = message;
+    }
+
+    public SingleResponseError(String message) {
         this.message = message;
     }
 

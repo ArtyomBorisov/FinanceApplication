@@ -1,7 +1,5 @@
 package by.itacademy.account.validation.validator.helper.impl;
 
-import by.itacademy.account.constant.FieldName;
-import by.itacademy.account.constant.MessageError;
 import by.itacademy.account.exception.ServerException;
 import by.itacademy.account.validation.validator.helper.ClassifierValidatorHelper;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +9,11 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.validation.ConstraintValidatorContext;
 import java.util.UUID;
+
+import static by.itacademy.account.constant.FieldName.ID_CATEGORY;
+import static by.itacademy.account.constant.FieldName.ID_CURRENCY;
+import static by.itacademy.account.constant.MessageError.ID_NOT_EXIST;
+import static by.itacademy.account.constant.MessageError.MISSING_FIELD;
 
 @Component
 public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper {
@@ -32,10 +35,10 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
         boolean valid = true;
 
         if (idCurrency == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.ID_CURRENCY, context);
+            addConstraintViolation(MISSING_FIELD, ID_CURRENCY, context);
             valid = false;
         } else if (!checkId(currencyUrl, idCurrency)) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, FieldName.ID_CURRENCY, context);
+            addConstraintViolation(ID_NOT_EXIST, ID_CURRENCY, context);
             valid = false;
         }
 
@@ -47,10 +50,10 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
         boolean valid = true;
 
         if (idCategory == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.ID_CATEGORY, context);
+            addConstraintViolation(MISSING_FIELD, ID_CATEGORY, context);
             valid = false;
         } else if (!checkId(categoryUrl, idCategory)) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, FieldName.ID_CATEGORY, context);
+            addConstraintViolation(ID_NOT_EXIST, ID_CATEGORY, context);
             valid = false;
         }
 

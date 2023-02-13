@@ -1,20 +1,18 @@
 package by.itacademy.account.scheduler.dto;
 
 import by.itacademy.account.scheduler.constant.TimeUnit;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.time.LocalDateTime;
 
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"start_time", "stop_time", "interval", "time_unit"})
 public class Schedule {
-    @JsonProperty("start_time")
     private LocalDateTime startTime;
-
-    @JsonProperty("stop_time")
     private LocalDateTime stopTime;
-
     private long interval;
-
-    @JsonProperty("time_unit")
     private TimeUnit timeUnit;
 
     public LocalDateTime getStartTime() {
@@ -53,26 +51,26 @@ public class Schedule {
         private final Schedule schedule;
 
         private Builder() {
-            this.schedule = new Schedule();
+            schedule = new Schedule();
         }
 
         public Builder setStartTime(LocalDateTime startTime) {
-            this.schedule.startTime = startTime;
+            schedule.startTime = startTime;
             return this;
         }
 
         public Builder setStopTime(LocalDateTime stopTime) {
-            this.schedule.stopTime = stopTime;
+            schedule.stopTime = stopTime;
             return this;
         }
 
         public Builder setInterval(long interval) {
-            this.schedule.interval = interval;
+            schedule.interval = interval;
             return this;
         }
 
         public Builder setTimeUnit(TimeUnit timeUnit) {
-            this.schedule.timeUnit = timeUnit;
+            schedule.timeUnit = timeUnit;
             return this;
         }
 
@@ -81,7 +79,7 @@ public class Schedule {
         }
 
         public Schedule build() {
-            return this.schedule;
+            return schedule;
         }
     }
 }

@@ -44,24 +44,24 @@ public class ReportFileEntity {
     }
 
     public static class Builder {
-        private ReportFileEntity entity;
+        private final ReportFileEntity entity;
 
         private Builder() {
-            this.entity = new ReportFileEntity();
+            entity = new ReportFileEntity();
         }
 
         public Builder setId(UUID id) {
-            this.entity.id = id;
+            entity.id = id;
             return this;
         }
 
         public Builder setData(byte[] data) {
-            this.entity.data = data;
+            entity.data = data;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.entity.user = user;
+            entity.user = user;
             return this;
         }
 
@@ -70,7 +70,7 @@ public class ReportFileEntity {
         }
 
         public ReportFileEntity build() {
-            return this.entity;
+            return entity;
         }
     }
 }

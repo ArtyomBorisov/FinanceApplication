@@ -37,12 +37,16 @@ public class ParamsValidator implements ConstraintValidator<CustomValid, Params>
 
         boolean valid = true;
 
-        for (UUID account : accounts) {
-            if (!accountHelper.isAccountIdExist(account, login, context)) valid = false;
+        if (accounts != null) {
+            for (UUID account : accounts) {
+                if (!accountHelper.isAccountIdExist(account, login, context)) valid = false;
+            }
         }
 
-        for (UUID category : categories) {
-            if (!classifierHelper.isCategoryIdExist(category, context)) valid = false;
+        if (categories != null) {
+            for (UUID category : categories) {
+                if (!classifierHelper.isCategoryIdExist(category, context)) valid = false;
+            }
         }
 
         if (sort == null) {

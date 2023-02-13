@@ -7,11 +7,5 @@ spring:
 
 default_day_interval : 90
 
-#classifier_currency_url : http://classifier-service:8080/backend/classifier/currency
-#classifier_category_url : http://classifier-service:8080/backend/classifier/operation/category
-
-server:
-  port : 8082
-
-classifier_currency_url : http://localhost:8080/backend/classifier/currency
-classifier_category_url : http://localhost:8080/backend/classifier/operation/category
+classifier_currency_url : http://classifier-service:8080/backend/classifier/currency
+classifier_category_url : http://classifier-service:8080/backend/classifier/operation/category

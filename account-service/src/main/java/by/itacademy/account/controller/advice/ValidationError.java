@@ -1,4 +1,4 @@
-package by.itacademy.classifier.validation;
+package by.itacademy.account.controller.advice;
 
 public class ValidationError {
     private final String field;

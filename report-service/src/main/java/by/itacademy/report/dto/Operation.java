@@ -70,59 +70,7 @@ public class Operation {
         return account;
     }
 
-    public Operation setAccount(Account account) {
+    public void setAccount(Account account) {
         this.account = account;
-        return this;
-    }
-
-    public static class Builder {
-        private Operation operation;
-
-        private Builder() {
-            this.operation = new Operation();
-        }
-
-        public Builder setId(UUID id) {
-            this.operation.id = id;
-            return this;
-        }
-
-        public Builder setDate(LocalDateTime date) {
-            this.operation.date = date;
-            return this;
-        }
-
-        public Builder setDescription(String description) {
-            this.operation.description = description;
-            return this;
-        }
-
-        public Builder setCategory(UUID category) {
-            this.operation.category = category;
-            return this;
-        }
-
-        public Builder setValue(double value) {
-            this.operation.value = value;
-            return this;
-        }
-
-        public Builder setCurrency(UUID currency) {
-            this.operation.currency = currency;
-            return this;
-        }
-
-        public Builder setAccount(Account account) {
-            this.operation.account = account;
-            return this;
-        }
-
-        public static Builder createBuilder() {
-            return new Builder();
-        }
-
-        public Operation build() {
-            return this.operation;
-        }
     }
 }

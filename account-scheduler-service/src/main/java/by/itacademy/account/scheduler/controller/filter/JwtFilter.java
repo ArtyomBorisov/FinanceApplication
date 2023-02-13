@@ -1,7 +1,6 @@
 package by.itacademy.account.scheduler.controller.filter;
 
 import by.itacademy.account.scheduler.utils.impl.JwtTokenUtil;
-import by.itacademy.account.scheduler.utils.impl.CustomUserDetails;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;

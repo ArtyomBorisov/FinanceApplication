@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Управление личными финансами
+  contact:
+    name: ITAcademy
+    url: http://it-academy.by
+
+servers:
+  - url: http://{host}:{port}
+    description: custom server
+    variables:
+      host:
+        description: host name
+        default: localhost
+      port:
+        description: port value
+        default: "8080"
+
+tags:
+  - name: "Email"
+    description: "Отправка писем по email"
+
+paths:
+  /api/v1/mail/report/{uuid}:
+    post:
+      tags:
+        - "Email"
+      summary: "Отправка отчёта по email"
+      parameters:
+        - in: path
+          name: uuid
+          description: "Идентификатор отчёта"
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        $ref: "#/components/requestBodies/RequestBody"
+      responses:
+        '200':
+          description: Отчёт отправлен
+        '204':
+          description: Сервер, по предоставленному uuid, не смог найти информацию
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+
+components:
+  requestBodies:
+    RequestBody:
+      description: Адрес
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/email'
+
+  responses:
+    Bad_Request:
+      description: Запрос некорректен. Сервер не может обработать запрос
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - type: array
+                items:
+                  $ref: '#/components/schemas/t_single_error_response'
+          examples:
+            t_single_error_response:
+              value:
+                - logref: error
+                  message:  Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз
+            t_multiple_error_response:
+              value:
+                logref: structured_error
+                errors:
+                  - field: time_unit
+                    message: Поле должно быть положительным числом
+    Unauthorized:
+      description: Для выполнения запроса на данный адрес требуется передать токен авторизации
+    Forbidden:
+      description: Данному токенту авторизации запрещено выполнять запрос на данный адрес
+    Internal_Server_Error:
+      description: Внутренняя ошибка сервера. Сервер не смог корректно обработать запрос
+      content:
+        applicaion/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/t_single_error_response'
+          example:
+            - logref: error
+              message:  Сервер не смог корректно обработать запрос. Пожалуйста обратитесь к администратору
+  schemas:
+    email:
+      type: object
+      description: Email
+      properties:
+        address:
+          type: string
+          description: "email"
+          
+    t_single_error_response:
+      type: object
+      description: Ошибка. Содержит общее описание ошибки
+      required:
+        - logref
+        - message
+      properties:
+        logref:
+          type: string
+          description: Тип ошибки
+          example: error
+        message:
+          description: Сообщение ошибки
+          type: string
+          example: Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз

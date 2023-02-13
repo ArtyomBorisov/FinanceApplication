@@ -41,24 +41,24 @@ public class BalanceEntity {
     }
 
     public static class Builder {
-        private BalanceEntity entity;
+        private final BalanceEntity entity;
 
         private Builder() {
-            this.entity = new BalanceEntity();
+            entity = new BalanceEntity();
         }
 
         public Builder setId(UUID id) {
-            this.entity.id = id;
+            entity.id = id;
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.entity.dtUpdate = dtUpdate;
+            entity.dtUpdate = dtUpdate;
             return this;
         }
 
         public Builder setSum(double sum) {
-            this.entity.sum = sum;
+            entity.sum = sum;
             return this;
         }
 

@@ -1,8 +1,8 @@
-package by.itacademy.report.exception;
+package by.itacademy.classifier.controller.advice;
 
 public class ValidationError {
-    private String field;
-    private String message;
+    private final String field;
+    private final String message;
 
     public ValidationError(String field, String message) {
         this.field = field;

@@ -28,7 +28,6 @@ public class AccountBackendController {
     public Page<Account> get(@RequestBody @AccountExist Collection<UUID> uuids,
                              @RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                              @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
-
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         return accountService.get(uuids, pageable);
     }

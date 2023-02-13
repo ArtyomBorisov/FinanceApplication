@@ -1,8 +1,6 @@
 package by.itacademy.account.validation.validator.helper.impl;
 
 import by.itacademy.account.constant.AccountType;
-import by.itacademy.account.constant.FieldName;
-import by.itacademy.account.constant.MessageError;
 import by.itacademy.account.dao.AccountRepository;
 import by.itacademy.account.validation.validator.helper.AccountValidatorHelper;
 import org.springframework.stereotype.Component;
@@ -11,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.validation.ConstraintValidatorContext;
 import java.util.Objects;
 import java.util.UUID;
+
+import static by.itacademy.account.constant.FieldName.TITLE;
+import static by.itacademy.account.constant.FieldName.TYPE;
+import static by.itacademy.account.constant.MessageError.*;
 
 @Component
 @Transactional(readOnly = true)
@@ -25,7 +27,7 @@ public class AccountValidatorHelperImpl implements AccountValidatorHelper {
     @Override
     public boolean isAccountTypeValid(AccountType accountType, ConstraintValidatorContext context) {
         if (accountType == null) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.TYPE, context);
+            addConstraintViolation(MISSING_FIELD, TYPE, context);
             return false;
         }
         return true;
@@ -36,11 +38,11 @@ public class AccountValidatorHelperImpl implements AccountValidatorHelper {
         boolean valid = true;
 
         if (title == null || title.isEmpty()) {
-            addConstraintViolation(MessageError.MISSING_FIELD, FieldName.TITLE, context);
+            addConstraintViolation(MISSING_FIELD, TITLE, context);
             valid = false;
 
         } else if (repository.findByUserAndTitle(login, title).isPresent()) {
-            addConstraintViolation(MessageError.NOT_UNIQUE_FIELD, FieldName.TITLE, context);
+            addConstraintViolation(NOT_UNIQUE_FIELD, TITLE, context);
             valid = false;
         }
 
@@ -54,7 +56,7 @@ public class AccountValidatorHelperImpl implements AccountValidatorHelper {
         }
 
         if (!repository.existsAccountEntityByUserAndId(login, accountUuid)) {
-            addConstraintViolation(MessageError.ID_NOT_EXIST, accountUuid.toString(), context);
+            addConstraintViolation(ID_NOT_EXIST, accountUuid.toString(), context);
             return false;
         }
 

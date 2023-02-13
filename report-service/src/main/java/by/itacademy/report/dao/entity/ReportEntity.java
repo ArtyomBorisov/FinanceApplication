@@ -98,46 +98,46 @@ public class ReportEntity {
         private final ReportEntity entity;
 
         private Builder() {
-            this.entity = new ReportEntity();
+            entity = new ReportEntity();
         }
 
         public Builder setId(UUID id) {
-            this.entity.id = id;
+            entity.id = id;
             return this;
         }
 
         public Builder setDtCreate(LocalDateTime dtCreate) {
-            this.entity.dtCreate = dtCreate;
+            entity.dtCreate = dtCreate;
             return this;
         }
 
         public Builder setDtUpdate(LocalDateTime dtUpdate) {
-            this.entity.dtUpdate = dtUpdate;
+            entity.dtUpdate = dtUpdate;
             return this;
         }
 
         public Builder setStatus(String status) {
-            this.entity.status = status;
+            entity.status = status;
             return this;
         }
 
         public Builder setType(String type) {
-            this.entity.type = type;
+            entity.type = type;
             return this;
         }
 
         public Builder setDescription(String description) {
-            this.entity.description = description;
+            entity.description = description;
             return this;
         }
 
         public Builder setParams(Params params) {
-            this.entity.params = params;
+            entity.params = params;
             return this;
         }
 
         public Builder setUser(String user) {
-            this.entity.user = user;
+            entity.user = user;
             return this;
         }
 
@@ -146,7 +146,7 @@ public class ReportEntity {
         }
 
         public ReportEntity build() {
-            return this.entity;
+            return entity;
         }
     }
 }

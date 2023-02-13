@@ -1,6 +1,7 @@
 package by.itacademy.account.validation.annotation;
 
 import by.itacademy.account.validation.validator.account.AccountIdValidator;
+import by.itacademy.account.validation.validator.account.AccountsIdCollectionValidator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
@@ -9,7 +10,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Constraint(validatedBy = AccountIdValidator.class)
+@Constraint(validatedBy = {AccountIdValidator.class, AccountsIdCollectionValidator.class})
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AccountExist {
