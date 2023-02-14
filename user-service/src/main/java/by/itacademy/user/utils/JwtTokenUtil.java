@@ -1,9 +1,12 @@
 package by.itacademy.user.utils;
 
 import io.jsonwebtoken.*;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class JwtTokenUtil {
@@ -11,14 +14,16 @@ public class JwtTokenUtil {
     private static final String jwtSecret = "NDQ1ZjAzNjQtMzViZi00MDRjLTljZjQtNjNjYWIyZTU5ZDYw";
     private static final String jwtIssuer = "ITAcademy";
 
-
     public static String generateAccessToken(UserDetails user) {
-        return generateAccessToken(user.getUsername());
-    }
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("authorities", user.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .toArray());
 
-    public static String generateAccessToken(String name) {
         return Jwts.builder()
-                .setSubject(name)
+                .setClaims(claims)
+                .setSubject(user.getUsername())
                 .setIssuer(jwtIssuer)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(7))) // 1 week

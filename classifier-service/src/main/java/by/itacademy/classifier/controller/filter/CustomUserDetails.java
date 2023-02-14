@@ -8,15 +8,15 @@ import java.util.Collection;
 
 public class CustomUserDetails implements UserDetails {
 
-    private String login;
+    private String token;
 
     public CustomUserDetails(String token) {
-        this.login = JwtTokenUtil.getUsername(token);
+        this.token = token;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return JwtTokenUtil.getAuthorities(token);
     }
 
     @Override
@@ -26,7 +26,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return login;
+        return JwtTokenUtil.getUsername(token);
     }
 
     @Override

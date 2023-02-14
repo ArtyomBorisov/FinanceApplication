@@ -13,8 +13,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static by.itacademy.classifier.constant.MessageError.INCORRECT_PARAMS;
-import static by.itacademy.classifier.constant.MessageError.SERVER_ERROR;
+import static by.itacademy.classifier.constant.MessageError.*;
 
 @ControllerAdvice
 public class ExceptionAdvice {
@@ -33,6 +32,10 @@ public class ExceptionAdvice {
             return new ResponseEntity<>(
                     new SingleResponseError(INCORRECT_PARAMS), HttpStatus.BAD_REQUEST);
 
+        }
+
+        if (violations.stream().anyMatch(violation -> FORBIDDEN.equals(violation.getMessage()))) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
         Function<ConstraintViolation<?>, ValidationError> function =

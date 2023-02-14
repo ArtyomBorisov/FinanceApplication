@@ -1,10 +1,13 @@
 package by.itacademy.classifier.utils.impl;
 
 import io.jsonwebtoken.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Date;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class JwtTokenUtil {
 
@@ -13,7 +16,14 @@ public class JwtTokenUtil {
 
 
     public static String generateAccessToken(UserDetails user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("authorities", user.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .toArray());
+
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(user.getUsername())
                 .setIssuer(jwtIssuer)
                 .setIssuedAt(new Date())
@@ -38,6 +48,18 @@ public class JwtTokenUtil {
                 .getBody();
 
         return claims.getExpiration();
+    }
+
+    public static Collection<? extends GrantedAuthority> getAuthorities(String token) {
+        try {
+            Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
+            List<String> authorities = (List<String>) claims.get("authorities");
+            return authorities.stream()
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        } catch (Exception exc) {
+            return Collections.emptyList();
+        }
     }
 
     public static boolean validate(String token) {
