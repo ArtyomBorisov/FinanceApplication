@@ -14,6 +14,8 @@ public final class MessageError {
 
     public static final String CONVERTER_ERROR = "Ошибка конвертации данных";
 
+    public static final String NO_REALIZATION_FOR_METHOD = "Отсутствует реализация HTTP-метода для получения данных";
+
     public static final String INCORRECT_PARAMS
             = "Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз";
 

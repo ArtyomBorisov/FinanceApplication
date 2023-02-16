@@ -115,6 +115,7 @@ public class ReportServiceImpl implements ReportService {
             reportFileRepository.save(reportFileEntity);
         }
 
+        params.setSort(null);
         ReportEntity reportEntity = conversionService.convert(report, ReportEntity.class);
         reportRepository.save(reportEntity);
     }

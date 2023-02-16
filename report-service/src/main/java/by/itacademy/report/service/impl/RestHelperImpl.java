@@ -1,9 +1,11 @@
 package by.itacademy.report.service.impl;
 
+import by.itacademy.report.constant.MessageError;
 import by.itacademy.report.constant.UrlType;
 import by.itacademy.report.dto.Account;
 import by.itacademy.report.dto.Operation;
 import by.itacademy.report.dto.Params;
+import by.itacademy.report.exception.ServerException;
 import by.itacademy.report.service.RestHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class RestHelperImpl implements RestHelper {
@@ -42,95 +45,32 @@ public class RestHelperImpl implements RestHelper {
 
     @Override
     public List<Operation> getOperations(Params params) throws JsonProcessingException {
-        boolean lastPage = false;
-        int page = -1;
+        List<Object> content = getContent(operationBackendUrl, Method.POST, params);
 
-        List<Operation> data = new ArrayList<>();
-
-        while (!lastPage) {
-            String pageJson = restTemplate.postForObject(
-                    operationBackendUrl + "?page=" + ++page + "&size=20",
-                    params,
-                    String.class);
-
-            Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
-
-            Object content = pageMap.get("content");
-
-            Collection<Object> collection = mapper.convertValue(content, Collection.class);
-
-            for (Object obj : collection) {
-                Operation operation = mapper.convertValue(obj, Operation.class);
-                data.add(operation);
-            }
-
-            lastPage = (boolean) pageMap.get("last");
-        }
-
-        return data;
+        return content.stream()
+                .map(obj -> mapper.convertValue(obj, Operation.class))
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Account> getAccounts() throws JsonProcessingException {
-        List<Account> data = new ArrayList<>();
+        List<Object> content = getContent(accountUrl, Method.GET, null);
 
-        boolean lastPage = false;
-        int temp = -1;
-
-        while (!lastPage) {
-            String pageJson = restTemplate.getForObject(
-                    accountUrl + "?page=" + ++temp + "&size=20",
-                    String.class);
-
-            Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
-
-            Object content = pageMap.get("content");
-
-            Collection<Object> collection = mapper.convertValue(content, Collection.class);
-
-            for (Object obj : collection) {
-                Account account = mapper.convertValue(obj, Account.class);
-                data.add(account);
-            }
-
-            lastPage = (boolean) pageMap.get("last");
-        }
-
-        return data;
+        return content.stream()
+                .map(obj -> mapper.convertValue(obj, Account.class))
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Account> getAccounts(Set<UUID> uuids) throws JsonProcessingException {
-        List<Account> data = new ArrayList<>();
-
-        boolean lastPage = false;
-        int temp = -1;
-
-        while (!lastPage) {
-            String pageJson = restTemplate.postForObject(
-                    accountBackendUrl + "?page=" + ++temp + "&size=20",
-                    uuids,
-                    String.class);
-
-            Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
-
-            Object content = pageMap.get("content");
-
-            Collection<Object> collection = mapper.convertValue(content, Collection.class);
-
-            for (Object obj : collection) {
-                Account account = mapper.convertValue(obj, Account.class);
-                data.add(account);
-            }
-
-            lastPage = (boolean) pageMap.get("last");
-        }
-
-        return data;
+        List<Object> content = getContent(accountUrl, Method.POST, uuids);
+        return content.stream()
+                .map(obj -> mapper.convertValue(obj, Account.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Map<UUID, String> getTitles(Set<UUID> collection, UrlType url) throws JsonProcessingException {
+    public Map<UUID, String> getTitles(Set<UUID> uuids, UrlType url) throws JsonProcessingException {
         String finalUrl = null;
 
         switch (url) {
@@ -148,30 +88,53 @@ public class RestHelperImpl implements RestHelper {
                 break;
         }
 
+        List<Object> content = getContent(finalUrl, Method.POST, uuids);
+
         Map<UUID, String> data = new HashMap<>();
+        for (Object obj : content) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            String uuidStr = (String) map.get("uuid");
+            UUID uuid = UUID.fromString(uuidStr);
+            String title = (String) map.get("title");
+            data.put(uuid, title);
+        }
+        return data;
+    }
+
+    private List<Object> getContent(String url, Method method, Object body) throws JsonProcessingException {
+        List<Object> data = new ArrayList<>();
+
         boolean lastPage = false;
         int page = -1;
 
         while (!lastPage) {
-            String pageJson = restTemplate.postForObject(
-                    finalUrl + "?page=" + ++page + "&size=20",
-                    collection,
-                    String.class);
+            String pageJson;
+            if (method == Method.GET) {
+                pageJson = restTemplate.getForObject(
+                        url + "?page=" + ++page + "&size=20",
+                        String.class);
+            } else if (method == Method.POST) {
+                pageJson = restTemplate.postForObject(
+                        url + "?page=" + ++page + "&size=20",
+                        body,
+                        String.class);
+            } else {
+                throw new ServerException(MessageError.NO_REALIZATION_FOR_METHOD);
+            }
 
             Map<String, Object> pageMap = mapper.readValue(pageJson, Map.class);
-
-            List<Map<String, Object>> content = (List<Map<String, Object>>) pageMap.get("content");
-
-            for (Map<String, Object> map : content) {
-                String temp = (String) map.get("uuid");
-                UUID uuid = UUID.fromString(temp);
-                String title = (String) map.get("title");
-                data.put(uuid, title);
-            }
+            Object content = pageMap.get("content");
+            Collection<Object> collection = mapper.convertValue(content, Collection.class);
+            data.addAll(collection);
 
             lastPage = (boolean) pageMap.get("last");
         }
 
         return data;
+    }
+
+    private enum Method {
+        GET,
+        POST
     }
 }
