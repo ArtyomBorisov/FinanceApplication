@@ -3,4 +3,5 @@
 */target/
 *.iml
 *.class
-mail-service/src/main/resources/application.properties
+./application.properties
+*/application.properties
