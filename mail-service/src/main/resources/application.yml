@@ -8,4 +8,5 @@ spring:
     from : "${email.login}"
     auth : true
 
-report_service_url : http://report-service:8080/report/%s/export
+urls:
+  report: http://report-service:8080/report/%s/export

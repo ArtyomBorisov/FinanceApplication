@@ -3,5 +3,5 @@
 */target/
 *.iml
 *.class
-./application.properties
-*/application.properties
+application.properties
+telegram-service

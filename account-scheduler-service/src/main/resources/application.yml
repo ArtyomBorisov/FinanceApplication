@@ -14,7 +14,7 @@ spring:
         "org.quartz.jobStore.driverDelegateClass": "org.quartz.impl.jdbcjobstore.PostgreSQLDelegate"
         "org.quartz.jobStore.tablePrefix": "quartz.QRTZ_"
 
-account_url : http://account-service:8080/account
-account_backend_url : http://account-service:8080/backend/account
-classifier_currency_url : http://classifier-service:8080/backend/classifier/currency
-classifier_category_url : http://classifier-service:8080/backend/classifier/operation/category
+urls:
+  account: http://account-service:8080/account
+  currency_backend: http://classifier-service:8080/backend/classifier/currency
+  category_backend: http://classifier-service:8080/backend/classifier/operation/category

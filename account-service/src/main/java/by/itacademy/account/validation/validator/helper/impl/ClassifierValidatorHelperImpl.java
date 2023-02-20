@@ -22,8 +22,8 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
     private final String categoryUrl;
     private final RestTemplate restTemplate;
 
-    public ClassifierValidatorHelperImpl(@Value("${classifier_currency_url}") String currencyUrl,
-                                         @Value("${classifier_category_url}") String categoryUrl,
+    public ClassifierValidatorHelperImpl(@Value("${urls.currency_backend}") String currencyUrl,
+                                         @Value("${urls.category_backend}") String categoryUrl,
                                          RestTemplate restTemplate) {
         this.currencyUrl = currencyUrl;
         this.categoryUrl = categoryUrl;

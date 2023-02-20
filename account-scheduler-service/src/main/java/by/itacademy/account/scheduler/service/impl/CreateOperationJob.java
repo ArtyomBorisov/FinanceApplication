@@ -25,15 +25,15 @@ public class CreateOperationJob implements Job {
 
     private final ScheduledOperationRepository scheduledOperationRepository;
     private final ConversionService conversionService;
-    private final String accountBackendUrl;
+    private final String accountUrl;
     private final RestTemplate restTemplate = new RestTemplate();
 
     public CreateOperationJob(ScheduledOperationRepository scheduledOperationRepository,
                               ConversionService conversionService,
-                              @Value("${account_url}") String accountBackendUrl) {
+                              @Value("${urls.account}") String accountUrl) {
         this.scheduledOperationRepository = scheduledOperationRepository;
         this.conversionService = conversionService;
-        this.accountBackendUrl = accountBackendUrl;
+        this.accountUrl = accountUrl;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class CreateOperationJob implements Job {
         ScheduledOperationEntity entity = scheduledOperationRepository.getById(uuid);
         ScheduledOperation scheduledOperation = conversionService.convert(entity, ScheduledOperation.class);
         Operation operation = scheduledOperation.getOperation();
-        String url = accountBackendUrl + "/" + operation.getAccount() + "/operation";
+        String url = accountUrl + "/" + operation.getAccount() + "/operation";
         HttpHeaders headers = getHeaders(operation.getUser());
 
         Operation operationForPost = Operation.Builder.createBuilder()

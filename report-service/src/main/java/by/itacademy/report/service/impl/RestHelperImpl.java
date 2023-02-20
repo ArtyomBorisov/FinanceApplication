@@ -29,11 +29,11 @@ public class RestHelperImpl implements RestHelper {
 
     public RestHelperImpl(RestTemplate restTemplate,
                           ObjectMapper mapper,
-                          @Value("${operation_backend_url}") String operationBackendUrl,
-                          @Value("${account_backend_url}") String accountBackendUrl,
-                          @Value("${currency_backend_url}") String currencyBackendUrl,
-                          @Value("${category_backend_url}") String categoryBackendUrl,
-                          @Value("${account_url}") String accountUrl) {
+                          @Value("${urls.operation_backend}") String operationBackendUrl,
+                          @Value("${urls.account_backend}") String accountBackendUrl,
+                          @Value("${urls.currency_backend}") String currencyBackendUrl,
+                          @Value("${urls.category_backend}") String categoryBackendUrl,
+                          @Value("${urls.account}") String accountUrl) {
         this.restTemplate = restTemplate;
         this.mapper = mapper;
         this.operationBackendUrl = operationBackendUrl;
@@ -63,7 +63,7 @@ public class RestHelperImpl implements RestHelper {
 
     @Override
     public List<Account> getAccounts(Set<UUID> uuids) throws JsonProcessingException {
-        List<Object> content = getContent(accountUrl, Method.POST, uuids);
+        List<Object> content = getContent(accountBackendUrl, Method.POST, uuids);
         return content.stream()
                 .map(obj -> mapper.convertValue(obj, Account.class))
                 .collect(Collectors.toList());

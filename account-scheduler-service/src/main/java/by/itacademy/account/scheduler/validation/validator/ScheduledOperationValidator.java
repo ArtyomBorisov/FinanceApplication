@@ -25,9 +25,9 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
     private final String categoryUrl;
 
     public ScheduledOperationValidator(RestTemplate restTemplate,
-                                       @Value("${account_url}") String accountUrl,
-                                       @Value("${classifier_currency_url}") String currencyUrl,
-                                       @Value("${classifier_category_url}") String categoryUrl) {
+                                       @Value("${urls.account}") String accountUrl,
+                                       @Value("${urls.currency_backend}") String currencyUrl,
+                                       @Value("${urls.category_backend}") String categoryUrl) {
         this.restTemplate = restTemplate;
         this.accountUrl = accountUrl;
         this.currencyUrl = currencyUrl;

@@ -27,7 +27,7 @@ public class MailServiceImpl implements MailService {
     public MailServiceImpl(RestTemplate restTemplate,
                            JavaMailSender emailSender,
                            @Value("${spring.mail.from}") String from,
-                           @Value("${report_service_url}") String reportUrl) {
+                           @Value("${urls.report}") String reportUrl) {
         this.restTemplate = restTemplate;
         this.emailSender = emailSender;
         this.from = from;
