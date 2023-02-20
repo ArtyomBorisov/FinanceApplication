@@ -5,11 +5,3 @@
 *.class
 ./application.properties
 */application.properties
-
-account-service/src/main/resources/application.properties
-account-scheduler-service/src/main/resources/application.properties
-classifier-service/src/main/resources/application.properties
-report-service/src/main/resources/application.properties
-mail-service/src/main/resources/application.properties
-user-service/src/main/resources/application.properties
-telegram-service/src/main/resources/application.properties
