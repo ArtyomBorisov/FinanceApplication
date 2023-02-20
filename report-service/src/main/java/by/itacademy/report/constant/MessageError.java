@@ -12,6 +12,10 @@ public final class MessageError {
 
     public static final String REPORT_MAKING_EXCEPTION = "Ошибка создания отчёта";
 
+    public static final String REPORT_DOWNLOADING_EXCEPTION = "Ошибка скачивания отчёта";
+
+    public static final String REPORT_UPLOADING_EXCEPTION = "Ошибка загрузки отчёта";
+
     public static final String CONVERTER_ERROR = "Ошибка конвертации данных";
 
     public static final String NO_REALIZATION_FOR_METHOD = "Отсутствует реализация HTTP-метода для получения данных";

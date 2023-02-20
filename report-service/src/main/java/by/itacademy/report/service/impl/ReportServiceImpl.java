@@ -1,23 +1,16 @@
 package by.itacademy.report.service.impl;
 
-import by.itacademy.report.constant.MessageError;
 import by.itacademy.report.dto.Params;
 import by.itacademy.report.dto.Report;
-import by.itacademy.report.dto.ReportFile;
+import by.itacademy.report.dto.FileData;
 import by.itacademy.report.constant.ReportType;
 import by.itacademy.report.constant.Status;
-import by.itacademy.report.exception.ServerException;
-import by.itacademy.report.dao.ReportFileRepository;
 import by.itacademy.report.dao.ReportRepository;
 import by.itacademy.report.dao.entity.ReportEntity;
-import by.itacademy.report.dao.entity.ReportFileEntity;
-import by.itacademy.report.service.ReportService;
-import by.itacademy.report.service.ReportExecutionService;
-import by.itacademy.report.service.UserHolder;
+import by.itacademy.report.service.*;
 import by.itacademy.report.utils.Generator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -25,9 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,25 +26,25 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReportServiceImpl implements ReportService {
 
-    private final ReportFileRepository reportFileRepository;
+    private final FileStorageService storageService;
+    private final ReportExecutionServiceFactory factory;
     private final ReportRepository reportRepository;
     private final ConversionService conversionService;
-    private final ApplicationContext context;
     private final UserHolder userHolder;
     private final Generator generator;
 
     private final Logger logger = LogManager.getLogger(ReportServiceImpl.class);
 
-    public ReportServiceImpl(ReportFileRepository reportFileRepository,
+    public ReportServiceImpl(FileStorageService storageService,
+                             ReportExecutionServiceFactory factory,
                              ReportRepository reportRepository,
                              ConversionService conversionService,
-                             ApplicationContext context,
                              UserHolder userHolder,
                              Generator generator) {
-        this.reportFileRepository = reportFileRepository;
+        this.storageService = storageService;
+        this.factory = factory;
         this.reportRepository = reportRepository;
         this.conversionService = conversionService;
-        this.context = context;
         this.userHolder = userHolder;
         this.generator = generator;
     }
@@ -61,32 +52,12 @@ public class ReportServiceImpl implements ReportService {
     @Transactional
     @Override
     public void execute(ReportType type, Params params) {
-        final ReportExecutionService reportExecutionService;
         String login = userHolder.getLoginFromContext();
-        String description;
-
-        switch (type) {
-            case BALANCE:
-                reportExecutionService = context.getBean(ReportBalanceExecutionService.class);
-                description = "Отчёт по балансам, запрос от ";
-                break;
-            case BY_DATE:
-                reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
-                description = "Отчёт по операциям в разрезе дат, запрос от ";
-                break;
-            case BY_CATEGORY:
-                reportExecutionService = context.getBean(ReportOperationSortByParamExecutionService.class);
-                description = "Отчёт по операциям в разрезе категорий, запрос от ";
-                break;
-            default:
-                throw new ServerException("Отсутствует реализация отчёта " + type);
-        }
-
-        params.setSort(type);
-
         UUID id = generator.generateUUID();
         LocalDateTime timeNow = generator.now();
-        String date = timeNow.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+
+        final ReportExecutionService reportExecutionService = factory.getService(type);
+        String description = factory.getDescription(type, timeNow);
 
         Report report = Report.Builder.createBuilder()
                 .setId(id)
@@ -94,28 +65,23 @@ public class ReportServiceImpl implements ReportService {
                 .setDtUpdate(timeNow)
                 .setStatus(Status.LOADED)
                 .setType(type)
-                .setDescription(description + date)
+                .setDescription(description)
                 .setParams(params)
                 .setUser(login)
                 .build();
 
-        ByteArrayOutputStream data = null;
-
+        params.setSort(type);
         try {
-            data = reportExecutionService.execute(params);
+            byte[] bytes = reportExecutionService.execute(params);
+            FileData fileData = new FileData(id.toString(), bytes);
+            storageService.upload(fileData);
             report.setStatus(Status.DONE);
         } catch (Exception e) {
             logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
             report.setStatus(Status.ERROR);
         }
-
-        if (data != null) {
-            ReportFile reportFile = new ReportFile(id, data, login);
-            ReportFileEntity reportFileEntity = conversionService.convert(reportFile, ReportFileEntity.class);
-            reportFileRepository.save(reportFileEntity);
-        }
-
         params.setSort(null);
+
         ReportEntity reportEntity = conversionService.convert(report, ReportEntity.class);
         reportRepository.save(reportEntity);
     }
@@ -134,17 +100,14 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
-    public ByteArrayOutputStream download(UUID id) {
-        String login = this.userHolder.getLoginFromContext();
-
-        ReportFileEntity fileEntity = reportFileRepository.findByUserAndId(login, id).orElse(null);
-
-        if (fileEntity == null) {
-            return null;
+    public byte[] download(UUID id) {
+        if (isReportReady(id)) {
+            return storageService
+                    .download(id.toString())
+                    .getData();
+        } else {
+            return new byte[0];
         }
-
-        ReportFile reportFile = conversionService.convert(fileEntity, ReportFile.class);
-        return reportFile.getData();
     }
 
     @Override

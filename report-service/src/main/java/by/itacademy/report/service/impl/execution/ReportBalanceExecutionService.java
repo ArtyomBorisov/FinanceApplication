@@ -1,4 +1,4 @@
-package by.itacademy.report.service.impl;
+package by.itacademy.report.service.impl.execution;
 
 import by.itacademy.report.constant.MessageError;
 import by.itacademy.report.constant.UrlType;
@@ -7,6 +7,7 @@ import by.itacademy.report.dto.Params;
 import by.itacademy.report.exception.ServerException;
 import by.itacademy.report.service.ReportExecutionService;
 import by.itacademy.report.service.RestHelper;
+import by.itacademy.report.utils.Generator;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -28,29 +29,30 @@ import java.util.stream.Collectors;
 public class ReportBalanceExecutionService implements ReportExecutionService {
 
     private final RestHelper restHelper;
+    private final Generator generator;
     private final String fontName;
 
     private static final String SHEET_NAME = "ReportBalance";
 
     public ReportBalanceExecutionService(RestHelper restHelper,
+                                         Generator generator,
                                          @Value("${font_name}") String fontName) {
         this.restHelper = restHelper;
+        this.generator = generator;
         this.fontName = fontName;
     }
 
     @Override
-    public ByteArrayOutputStream execute(Params params) throws ServerException {
+    public byte[] execute(Params params) throws ServerException {
         Set<UUID> uuids = params.getAccounts();
 
-        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
+        ) {
+            LocalDateTime time = generator.now();
+
             Sheet sheet = workbook.createSheet(SHEET_NAME);
-            LocalDateTime time = LocalDateTime.now();
-
-            sheet.setColumnWidth(0, 35 * 256);
-            sheet.setColumnWidth(1, 17 * 256);
-            sheet.setColumnWidth(2, 10 * 256);
-            sheet.setColumnWidth(3, 10 * 256);
-
+            createColumns(sheet);
             fillHeader(workbook, time);
 
             boolean empty = (uuids == null) || uuids.isEmpty();
@@ -64,13 +66,18 @@ public class ReportBalanceExecutionService implements ReportExecutionService {
 
             fillSheet(workbook, accounts, titlesCurrency);
 
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
             workbook.write(outputStream);
-            return outputStream;
+            return outputStream.toByteArray();
         } catch (IOException e) {
             throw new ServerException(MessageError.REPORT_MAKING_EXCEPTION, e);
         }
+    }
+
+    private void createColumns(Sheet sheet) {
+        sheet.setColumnWidth(0, 35 * 256);
+        sheet.setColumnWidth(1, 17 * 256);
+        sheet.setColumnWidth(2, 10 * 256);
+        sheet.setColumnWidth(3, 10 * 256);
     }
 
     private void fillHeader(XSSFWorkbook workbook,

@@ -6,12 +6,11 @@ import by.itacademy.report.constant.ReportType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
 public interface ReportService {
     void execute(ReportType type, Params params);
     Page<Report> get(Pageable pageable);
-    ByteArrayOutputStream download(UUID id);
+    byte[] download(UUID id);
     boolean isReportReady(UUID id);
 }

@@ -1,4 +1,4 @@
-package by.itacademy.report.service.impl;
+package by.itacademy.report.service.impl.execution;
 
 import by.itacademy.report.constant.MessageError;
 import by.itacademy.report.constant.UrlType;
@@ -47,32 +47,20 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
     }
 
     @Override
-    public ByteArrayOutputStream execute(Params params) throws ServerException {
+    public byte[] execute(Params params) throws ServerException {
         Set<UUID> accounts = params.getAccounts();
         Set<UUID> categories = params.getCategories();
+
+        fillFromAndToTimesIfAbsent(params);
         LocalDate from = params.getFrom();
         LocalDate to = params.getTo();
 
-        if (to == null) {
-            to = generator.now().toLocalDate();
-            params.setTo(to);
-        }
-        if (from == null) {
-            from = to.minusDays(defaultDayInterval);
-            params.setFrom(from);
-        }
-
-        try (XSSFWorkbook workbook = new XSSFWorkbook();) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
+        ) {
 
             Sheet sheet = workbook.createSheet(SHEET_NAME);
-
-            sheet.setColumnWidth(0, 12 * 256);
-            sheet.setColumnWidth(1, 12 * 256);
-            sheet.setColumnWidth(2, 35 * 256);
-            sheet.setColumnWidth(3, 15 * 256);
-            sheet.setColumnWidth(4, 60 * 256);
-            sheet.setColumnWidth(5, 10 * 256);
-            sheet.setColumnWidth(6, 10 * 256);
+            createColumns(sheet);
 
             List<Operation> operations = restHelper.getOperations(params);
 
@@ -85,21 +73,36 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
             Map<UUID, String> accountsTitleMap = restHelper.getTitles(accounts, UrlType.ACCOUNT);
 
             fillHeader(workbook);
-            fillSheet(workbook,
-                    operations,
-                    currenciesTitleMap,
-                    categoriesTitleMap,
-                    accountsTitleMap,
-                    from,
-                    to);
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            fillSheet(workbook, operations, currenciesTitleMap, categoriesTitleMap, accountsTitleMap, from, to);
 
             workbook.write(outputStream);
-            return outputStream;
+            return outputStream.toByteArray();
         } catch (IOException e) {
             throw new ServerException(MessageError.REPORT_MAKING_EXCEPTION, e);
         }
+    }
+
+    private void fillFromAndToTimesIfAbsent(Params params) {
+        LocalDate to = params.getTo();
+        LocalDate from = params.getFrom();
+        if (to == null) {
+            to = generator.now().toLocalDate();
+            params.setTo(to);
+        }
+        if (from == null) {
+            from = to.minusDays(defaultDayInterval);
+            params.setFrom(from);
+        }
+    }
+
+    private void createColumns(Sheet sheet) {
+        sheet.setColumnWidth(0, 12 * 256);
+        sheet.setColumnWidth(1, 12 * 256);
+        sheet.setColumnWidth(2, 35 * 256);
+        sheet.setColumnWidth(3, 15 * 256);
+        sheet.setColumnWidth(4, 60 * 256);
+        sheet.setColumnWidth(5, 10 * 256);
+        sheet.setColumnWidth(6, 10 * 256);
     }
 
     private void fillHeader(XSSFWorkbook workbook) {

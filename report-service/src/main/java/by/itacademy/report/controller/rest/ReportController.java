@@ -16,7 +16,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Min;
-import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
 @RequestMapping("/report")
@@ -46,24 +45,22 @@ public class ReportController {
 
     @GetMapping("/{uuid}/export")
     public ResponseEntity<ByteArrayResource> download(@PathVariable(name = "uuid") UUID id) {
-        ByteArrayOutputStream outputStream = reportService.download(id);
-
-        if (outputStream == null) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-
-        HttpHeaders header = new HttpHeaders();
-        header.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + id + ".xlsx");
-        byte[] bytes = outputStream.toByteArray();
-        return new ResponseEntity<>(new ByteArrayResource(bytes), header, HttpStatus.OK);
+        byte[] bytes = reportService.download(id);
+        return bytes.length == 0 ?
+                new ResponseEntity<>(HttpStatus.NO_CONTENT) :
+                new ResponseEntity<>(new ByteArrayResource(bytes), createHeadersWithContent(id), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{uuid}/export" , method = RequestMethod.HEAD)
     public ResponseEntity<?> isReady(@PathVariable(name = "uuid") UUID id) {
-        if (reportService.isReportReady(id)) {
-            return new ResponseEntity<>(HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
+        return reportService.isReportReady(id) ?
+                new ResponseEntity<>(HttpStatus.OK) :
+                new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    private HttpHeaders createHeadersWithContent(UUID id) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + id + ".xlsx");
+        return headers;
     }
 }

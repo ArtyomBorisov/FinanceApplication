@@ -5,6 +5,12 @@ spring:
     username: "${spring.datasource.username}"
     password: "${spring.datasource.password}"
 
+minio:
+  url : "${minio.url}"
+  bucket : "${minio.bucket}"
+  access-key : "${minio.access-key}"
+  secret-key : "${minio.secret-key}"
+
 font_name: Calibri
 default_day_interval: 90
 
