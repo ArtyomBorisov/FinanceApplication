@@ -28,7 +28,7 @@ public class ParamsValidator implements ConstraintValidator<CustomValid, Params>
     public ParamsValidator(HttpServletRequest request,
                            RestTemplate restTemplate,
                            @Value("${urls.account}") String accountUrl,
-                           @Value("${currency_url}") String categoryUrl) {
+                           @Value("${urls.currency_backend}") String categoryUrl) {
         this.request = request;
         this.restTemplate = restTemplate;
         this.accountUrl = accountUrl;

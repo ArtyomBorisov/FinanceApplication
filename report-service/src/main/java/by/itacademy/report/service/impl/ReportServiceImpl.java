@@ -2,15 +2,12 @@ package by.itacademy.report.service.impl;
 
 import by.itacademy.report.dto.Params;
 import by.itacademy.report.dto.Report;
-import by.itacademy.report.dto.FileData;
 import by.itacademy.report.constant.ReportType;
 import by.itacademy.report.constant.Status;
 import by.itacademy.report.dao.ReportRepository;
 import by.itacademy.report.dao.entity.ReportEntity;
 import by.itacademy.report.service.*;
 import by.itacademy.report.utils.Generator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -19,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,22 +25,20 @@ import java.util.stream.Collectors;
 public class ReportServiceImpl implements ReportService {
 
     private final FileStorageService storageService;
-    private final ReportExecutionServiceFactory factory;
+    private final ReportExecutionService reportExecutionService;
     private final ReportRepository reportRepository;
     private final ConversionService conversionService;
     private final UserHolder userHolder;
     private final Generator generator;
 
-    private final Logger logger = LogManager.getLogger(ReportServiceImpl.class);
-
     public ReportServiceImpl(FileStorageService storageService,
-                             ReportExecutionServiceFactory factory,
+                             ReportExecutionService reportExecutionService,
                              ReportRepository reportRepository,
                              ConversionService conversionService,
                              UserHolder userHolder,
                              Generator generator) {
         this.storageService = storageService;
-        this.factory = factory;
+        this.reportExecutionService = reportExecutionService;
         this.reportRepository = reportRepository;
         this.conversionService = conversionService;
         this.userHolder = userHolder;
@@ -51,39 +47,11 @@ public class ReportServiceImpl implements ReportService {
 
     @Transactional
     @Override
-    public void execute(ReportType type, Params params) {
-        String login = userHolder.getLoginFromContext();
-        UUID id = generator.generateUUID();
-        LocalDateTime timeNow = generator.now();
-
-        final ReportExecutionService reportExecutionService = factory.getService(type);
-        String description = factory.getDescription(type, timeNow);
-
-        Report report = Report.Builder.createBuilder()
-                .setId(id)
-                .setDtCreate(timeNow)
-                .setDtUpdate(timeNow)
-                .setStatus(Status.LOADED)
-                .setType(type)
-                .setDescription(description)
-                .setParams(params)
-                .setUser(login)
-                .build();
-
-        params.setSort(type);
-        try {
-            byte[] bytes = reportExecutionService.execute(params);
-            FileData fileData = new FileData(id.toString(), bytes);
-            storageService.upload(fileData);
-            report.setStatus(Status.DONE);
-        } catch (Exception e) {
-            logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
-            report.setStatus(Status.ERROR);
-        }
-        params.setSort(null);
-
+    public void createReportExecutionTask(ReportType type, Params params) {
+        Report report = createReportDto(type, params);
         ReportEntity reportEntity = conversionService.convert(report, ReportEntity.class);
         reportRepository.save(reportEntity);
+        reportExecutionService.startExecution(type, params, report.getId());
     }
 
     @Override
@@ -111,5 +79,40 @@ public class ReportServiceImpl implements ReportService {
         String login = userHolder.getLoginFromContext();
         String status = Status.DONE.toString();
         return reportRepository.findByUserAndIdAndStatus(login, id, status).isPresent();
+    }
+
+    private Report createReportDto(ReportType type, Params params) {
+        String login = userHolder.getLoginFromContext();
+        UUID id = generator.generateUUID();
+        LocalDateTime timeNow = generator.now();
+
+        return Report.Builder.createBuilder()
+                .setId(id)
+                .setDtCreate(timeNow)
+                .setDtUpdate(timeNow)
+                .setStatus(Status.LOADED)
+                .setType(type)
+                .setDescription(getDescription(type, timeNow))
+                .setParams(params)
+                .setUser(login)
+                .build();
+    }
+
+    private String getDescription(ReportType reportType, LocalDateTime ldt) {
+        String finalTime = ldt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+
+        switch (reportType) {
+            case BALANCE:
+                return "Отчёт по балансам, запрос от " + finalTime;
+
+            case BY_DATE:
+                return "Отчёт по операциям в разрезе дат, запрос от " + finalTime;
+
+            case BY_CATEGORY:
+                return "Отчёт по операциям в разрезе категорий, запрос от " + finalTime;
+
+            default:
+                return "Отчёт";
+        }
     }
 }

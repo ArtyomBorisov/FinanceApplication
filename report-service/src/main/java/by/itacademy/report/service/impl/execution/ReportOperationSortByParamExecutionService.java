@@ -1,11 +1,9 @@
 package by.itacademy.report.service.impl.execution;
 
-import by.itacademy.report.constant.MessageError;
 import by.itacademy.report.constant.UrlType;
 import by.itacademy.report.dto.Operation;
 import by.itacademy.report.dto.Params;
-import by.itacademy.report.exception.ServerException;
-import by.itacademy.report.service.ReportExecutionService;
+import by.itacademy.report.service.ReportDataExecutionService;
 import by.itacademy.report.service.RestHelper;
 import by.itacademy.report.utils.Generator;
 import org.apache.poi.ss.usermodel.*;
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ReportOperationSortByParamExecutionService implements ReportExecutionService {
+public class ReportOperationSortByParamExecutionService implements ReportDataExecutionService {
 
     private final RestHelper restHelper;
     private final Generator generator;
@@ -47,7 +45,7 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
     }
 
     @Override
-    public byte[] execute(Params params) throws ServerException {
+    public byte[] execute(Params params) throws IOException {
         Set<UUID> accounts = params.getAccounts();
         Set<UUID> categories = params.getCategories();
 
@@ -55,30 +53,22 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
         LocalDate from = params.getFrom();
         LocalDate to = params.getTo();
 
+        List<Operation> operations = restHelper.getOperations(params);
+        Set<UUID> currencies = operations.stream().map(Operation::getCurrency).collect(Collectors.toSet());
+
+        Map<UUID, String> titleCurrency = restHelper.getTitles(currencies, UrlType.CURRENCY);
+        Map<UUID, String> titleCategory = restHelper.getTitles(categories, UrlType.CATEGORY);
+        Map<UUID, String> titleAccount = restHelper.getTitles(accounts, UrlType.ACCOUNT);
+
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
         ) {
-
             Sheet sheet = workbook.createSheet(SHEET_NAME);
             createColumns(sheet);
-
-            List<Operation> operations = restHelper.getOperations(params);
-
-            Set<UUID> currencies = operations.stream()
-                    .map(Operation::getCurrency)
-                    .collect(Collectors.toSet());
-
-            Map<UUID, String> currenciesTitleMap = restHelper.getTitles(currencies, UrlType.CURRENCY);
-            Map<UUID, String> categoriesTitleMap = restHelper.getTitles(categories, UrlType.CATEGORY);
-            Map<UUID, String> accountsTitleMap = restHelper.getTitles(accounts, UrlType.ACCOUNT);
-
             fillHeader(workbook);
-            fillSheet(workbook, operations, currenciesTitleMap, categoriesTitleMap, accountsTitleMap, from, to);
-
+            fillSheet(workbook, operations, titleCurrency, titleCategory, titleAccount, from, to);
             workbook.write(outputStream);
             return outputStream.toByteArray();
-        } catch (IOException e) {
-            throw new ServerException(MessageError.REPORT_MAKING_EXCEPTION, e);
         }
     }
 
@@ -137,9 +127,9 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
 
     private void fillSheet(XSSFWorkbook workbook,
                            List<Operation> operations,
-                           Map<UUID, String> currencyTitleMap,
-                           Map<UUID, String> categoryTitleMap,
-                           Map<UUID, String> accountTitleMap,
+                           Map<UUID, String> titleCurrency,
+                           Map<UUID, String> titleCategory,
+                           Map<UUID, String> titleAccount,
                            LocalDate from,
                            LocalDate to) {
         Sheet sheet = workbook.getSheet(SHEET_NAME);
@@ -170,11 +160,11 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
                 "Даты с " + from.format(DateTimeFormatter.ofPattern(pattern))
                         + " по " + to.format(DateTimeFormatter.ofPattern(pattern)));
 
-        String temp = accountTitleMap.values().toString();
+        String temp = titleAccount.values().toString();
         createCell(rowHeader2, 0, cellStyleRows,
                 "Счета: " + temp.substring(1, temp.length() - 1));
 
-        temp = categoryTitleMap.values().toString();
+        temp = titleCategory.values().toString();
         createCell(rowHeader3, 0, cellStyleRows,
                 "Категории: " + temp.substring(1, temp.length() - 1));
 
@@ -193,7 +183,7 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
             createCell(row, ++numberCell, cellStyleSheet,
                     operation.getAccount().getTitle());
 
-            String title = categoryTitleMap.get(operation.getCategory());
+            String title = titleCategory.get(operation.getCategory());
             createCell(row, ++numberCell, cellStyleSheet, title);
 
             String description = operation.getDescription();
@@ -208,7 +198,7 @@ public class ReportOperationSortByParamExecutionService implements ReportExecuti
                 value.setCellStyle(cellStyleSheetGreen);
             }
 
-            String currency = currencyTitleMap.get(operation.getCurrency());
+            String currency = titleCurrency.get(operation.getCurrency());
             createCell(row, ++numberCell, cellStyleSheet, currency);
         }
     }

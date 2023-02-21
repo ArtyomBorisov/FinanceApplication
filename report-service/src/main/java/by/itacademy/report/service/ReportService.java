@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ReportService {
-    void execute(ReportType type, Params params);
+    void createReportExecutionTask(ReportType type, Params params);
     Page<Report> get(Pageable pageable);
     byte[] download(UUID id);
     boolean isReportReady(UUID id);

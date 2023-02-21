@@ -1,11 +1,9 @@
 package by.itacademy.report.service.impl.execution;
 
-import by.itacademy.report.constant.MessageError;
 import by.itacademy.report.constant.UrlType;
 import by.itacademy.report.dto.Account;
 import by.itacademy.report.dto.Params;
-import by.itacademy.report.exception.ServerException;
-import by.itacademy.report.service.ReportExecutionService;
+import by.itacademy.report.service.ReportDataExecutionService;
 import by.itacademy.report.service.RestHelper;
 import by.itacademy.report.utils.Generator;
 import org.apache.poi.ss.usermodel.*;
@@ -26,7 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ReportBalanceExecutionService implements ReportExecutionService {
+public class ReportBalanceExecutionService implements ReportDataExecutionService {
 
     private final RestHelper restHelper;
     private final Generator generator;
@@ -43,33 +41,25 @@ public class ReportBalanceExecutionService implements ReportExecutionService {
     }
 
     @Override
-    public byte[] execute(Params params) throws ServerException {
+    public byte[] execute(Params params) throws IOException {
         Set<UUID> uuids = params.getAccounts();
+        LocalDateTime time = generator.now();
+
+        boolean empty = (uuids == null) || uuids.isEmpty();
+        List<Account> accounts = empty ? restHelper.getAccounts() : restHelper.getAccounts(uuids);
+
+        Set<UUID> currencies = accounts.stream().map(Account::getCurrency).collect(Collectors.toSet());
+        Map<UUID, String> titleCurrency = restHelper.getTitles(currencies, UrlType.CURRENCY);
 
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
         ) {
-            LocalDateTime time = generator.now();
-
             Sheet sheet = workbook.createSheet(SHEET_NAME);
             createColumns(sheet);
             fillHeader(workbook, time);
-
-            boolean empty = (uuids == null) || uuids.isEmpty();
-            List<Account> accounts = empty ? restHelper.getAccounts() : restHelper.getAccounts(uuids);
-
-            Set<UUID> currencies = accounts.stream()
-                    .map(Account::getCurrency)
-                    .collect(Collectors.toSet());
-
-            Map<UUID, String> titlesCurrency = restHelper.getTitles(currencies, UrlType.CURRENCY);
-
-            fillSheet(workbook, accounts, titlesCurrency);
-
+            fillSheet(workbook, accounts, titleCurrency);
             workbook.write(outputStream);
             return outputStream.toByteArray();
-        } catch (IOException e) {
-            throw new ServerException(MessageError.REPORT_MAKING_EXCEPTION, e);
         }
     }
 
@@ -114,7 +104,7 @@ public class ReportBalanceExecutionService implements ReportExecutionService {
 
     private void fillSheet(XSSFWorkbook workbook,
                            List<Account> accounts,
-                           Map<UUID, String> titlesCurrency) {
+                           Map<UUID, String> titleCurrency) {
         Sheet sheet = workbook.getSheet(SHEET_NAME);
 
         XSSFFont fontSheet = createFont(workbook, fontName, (short) 11, false, false);
@@ -129,7 +119,7 @@ public class ReportBalanceExecutionService implements ReportExecutionService {
             UUID idCurrency = acc.getCurrency();
             createCell(row, ++numberCell, cellStyleSheet, acc.getTitle());
             createCell(row, ++numberCell, cellStyleSheet, acc.getType());
-            createCell(row, ++numberCell, cellStyleSheet, titlesCurrency.get(idCurrency));
+            createCell(row, ++numberCell, cellStyleSheet, titleCurrency.get(idCurrency));
             createCell(row, ++numberCell, cellStyleSheet, acc.getBalance());
         }
     }

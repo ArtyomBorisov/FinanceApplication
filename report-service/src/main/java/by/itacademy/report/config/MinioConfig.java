@@ -6,15 +6,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MinioConfiguration {
+public class MinioConfig {
 
     private final String accessKey;
     private final String secretKey;
     private final String minioUrl;
 
-    public MinioConfiguration(@Value("${minio.access-key}") String accessKey,
-                              @Value("${minio.secret-key}") String secretKey,
-                              @Value("${minio.url}") String minioUrl) {
+    public MinioConfig(@Value("${minio.access-key}") String accessKey,
+                       @Value("${minio.secret-key}") String secretKey,
+                       @Value("${minio.url}") String minioUrl) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.minioUrl = minioUrl;

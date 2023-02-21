@@ -33,7 +33,7 @@ public class ReportController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@PathVariable ReportType type,
                        @RequestBody @CustomValid Params params){
-        reportService.execute(type, params);
+        reportService.createReportExecutionTask(type, params);
     }
 
     @GetMapping

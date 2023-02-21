@@ -1,9 +1,10 @@
 package by.itacademy.report.service;
 
+import by.itacademy.report.constant.ReportType;
 import by.itacademy.report.dto.Params;
 
-import java.io.IOException;
+import java.util.UUID;
 
 public interface ReportExecutionService {
-    byte[] execute(Params params) throws IOException;
+    void startExecution(ReportType type, Params params, UUID idReport);
 }
