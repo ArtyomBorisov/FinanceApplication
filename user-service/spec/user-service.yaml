@@ -1,0 +1,116 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Управление личными финансами
+  contact:
+    name: ITAcademy
+    url: http://it-academy.by
+
+servers:
+  - url: http://{host}:{port}
+    description: custom server
+    variables:
+      host:
+        description: host name
+        default: localhost
+      port:
+        description: port value
+        default: "8080"
+
+tags:
+  - name: "User-service"
+    description: "Отправка писем по email"
+
+paths:
+  /api/v1/public/user/reg:
+    post:
+      tags:
+        - "User-service"
+      summary: "Регистрация нового пользователя"
+      requestBody:
+        $ref: "#/components/requestBodies/LoginAndPassword"
+      responses:
+        '201':
+          description: Пользователь зарегистрирован
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+          
+  /api/v1/public/user/login:
+    post:
+      tags:
+        - "User-service"
+      summary: "Аутентификация пользователя"
+      requestBody:
+        $ref: "#/components/requestBodies/LoginAndPassword"
+      responses:
+        '200':
+          description: Аутентификация прошла успешно
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+
+components:
+  requestBodies:
+    LoginAndPassword:
+      description: Логин, пароль
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LoginAndPassword'
+
+  responses:
+    Bad_Request:
+      description: Запрос некорректен. Сервер не может обработать запрос
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - type: array
+                items:
+                  $ref: '#/components/schemas/t_single_error_response'
+          examples:
+            t_single_error_response:
+              value:
+                - logref: error
+                  message:  Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз
+    Internal_Server_Error:
+      description: Внутренняя ошибка сервера. Сервер не смог корректно обработать запрос
+      content:
+        applicaion/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/t_single_error_response'
+          example:
+            - logref: error
+              message:  Сервер не смог корректно обработать запрос. Пожалуйста обратитесь к администратору
+  schemas:
+    LoginAndPassword:
+      type: object
+      properties:
+        login:
+          type: string
+          description: "логин"
+        password:
+          type: string
+          description: "пароль"
+          
+    t_single_error_response:
+      type: object
+      description: Ошибка. Содержит общее описание ошибки
+      required:
+        - logref
+        - message
+      properties:
+        logref:
+          type: string
+          description: Тип ошибки
+          example: error
+        message:
+          description: Сообщение ошибки
+          type: string
+          example: Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз
