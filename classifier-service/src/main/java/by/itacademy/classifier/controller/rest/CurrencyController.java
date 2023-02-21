@@ -33,7 +33,6 @@ public class CurrencyController {
     @GetMapping
     public Page<Currency> get(@RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                               @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
-
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         return currencyService.get(pageable);
     }

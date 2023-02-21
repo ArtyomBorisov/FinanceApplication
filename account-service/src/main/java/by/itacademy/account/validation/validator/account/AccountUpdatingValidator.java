@@ -57,9 +57,6 @@ public class AccountUpdatingValidator implements ConstraintValidator<AccountUpda
             titleValid = accountHelper.isTitleValid(newTitle, login, context);
         }
 
-        return typeValid
-                && currencyIdValid
-                && accountIdValid
-                && titleValid;
+        return typeValid && currencyIdValid && accountIdValid && titleValid;
     }
 }

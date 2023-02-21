@@ -33,7 +33,6 @@ public class CategoryController {
     @GetMapping
     public Page<Category> get(@RequestParam @Min(value = 0, message = MessageError.PAGE_NUMBER) int page,
                               @RequestParam @Min(value = 1, message = MessageError.PAGE_SIZE) int size) {
-
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         return categoryService.get(pageable);
     }

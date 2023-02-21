@@ -29,9 +29,7 @@ public class AccountsIdCollectionValidator implements ConstraintValidator<Accoun
         String login = userHolder.getLoginFromContext();
         boolean valid = true;
         for (UUID uuid : collection) {
-            if (!helper.isAccountIdExist(uuid, login, context)) {
-                valid = false;
-            }
+            if (!helper.isAccountIdExist(uuid, login, context)) valid = false;
         }
 
         return valid;

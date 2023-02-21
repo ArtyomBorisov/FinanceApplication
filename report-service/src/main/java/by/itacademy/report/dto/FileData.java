@@ -1,8 +1,8 @@
 package by.itacademy.report.dto;
 
 public class FileData {
-    private String name;
-    private byte[] data;
+    private final String name;
+    private final byte[] data;
 
     public FileData(String name, byte[] data) {
         this.name = name;

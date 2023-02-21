@@ -28,25 +28,12 @@ public class ExceptionAdvice {
         logger.error(LOGGER_MESSAGE, e.getClass().getSimpleName(), e.getMessage());
 
         Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
-        int size = violations.size();
+        return violations.isEmpty() ?
+                new ResponseEntity<>(
+                        new SingleResponseError(INCORRECT_PARAMS), HttpStatus.BAD_REQUEST) :
 
-        if (size == 0) {
-            return new ResponseEntity<>(
-                    new SingleResponseError(INCORRECT_PARAMS), HttpStatus.BAD_REQUEST);
-
-        }
-
-        Function<ConstraintViolation<?>, ValidationError> function =
-                violation -> new ValidationError(
-                        violation.getPropertyPath().toString(),
-                        violation.getMessage());
-
-        List<ValidationError> errors = violations.stream()
-                .map(function)
-                .collect(Collectors.toList());
-
-        return new ResponseEntity<>(
-                new MultipleResponseError(errors), HttpStatus.BAD_REQUEST);
+                new ResponseEntity<>(
+                        new MultipleResponseError(getErrors(violations)), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
@@ -55,5 +42,17 @@ public class ExceptionAdvice {
 
         return new ResponseEntity<>(
                 new SingleResponseError(SERVER_ERROR), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private List<ValidationError> getErrors(Set<ConstraintViolation<?>> violations) {
+        Function<ConstraintViolation<?>, ValidationError> function =
+                violation -> new ValidationError(
+                        violation.getPropertyPath().toString(),
+                        violation.getMessage()
+                );
+
+        return violations.stream()
+                .map(function)
+                .collect(Collectors.toList());
     }
 }

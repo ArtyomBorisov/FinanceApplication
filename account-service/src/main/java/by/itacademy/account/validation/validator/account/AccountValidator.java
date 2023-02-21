@@ -31,11 +31,11 @@ public class AccountValidator implements ConstraintValidator<CustomValid, Accoun
 
         String login = userHolder.getLoginFromContext();
 
-        boolean valid1 = accountHelper.isAccountTypeValid(account.getType(), context);
-        boolean valid2 = classifierHelper.isCurrencyIdExist(account.getCurrency(), context);
-        boolean valid3 = accountHelper.isTitleValid(account.getTitle(), login, context);
+        boolean accountTypeValid = accountHelper.isAccountTypeValid(account.getType(), context);
+        boolean currencyIdExist = classifierHelper.isCurrencyIdExist(account.getCurrency(), context);
+        boolean titleValid = accountHelper.isTitleValid(account.getTitle(), login, context);
 
-        return valid1 && valid2 && valid3;
+        return accountTypeValid && currencyIdExist && titleValid;
     }
 
 

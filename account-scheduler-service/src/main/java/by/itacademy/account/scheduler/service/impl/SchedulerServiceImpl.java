@@ -33,39 +33,14 @@ public class SchedulerServiceImpl implements SchedulerService {
 
     @Override
     public void addScheduledOperation(Schedule schedule, UUID idScheduledOperation) {
+        String idString = idScheduledOperation.toString();
+
         JobDetail job = JobBuilder.newJob(CreateOperationJob.class)
-                .withIdentity(idScheduledOperation.toString(), OPERATIONS)
-                .usingJobData("operation", idScheduledOperation.toString())
+                .withIdentity(idString, OPERATIONS)
+                .usingJobData("operation", idString)
                 .build();
 
-        long interval = schedule.getInterval();
-        LocalDateTime startTime = schedule.getStartTime();
-
-        TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
-                .withIdentity(idScheduledOperation.toString(), OPERATIONS);
-
-        if (startTime == null) {
-            builder.startNow();
-            startTime = generator.now();
-        } else {
-            Date startDate = conversionService.convert(startTime, Date.class);
-            builder.startAt(startDate);
-        }
-
-        if (interval > 0 && schedule.getTimeUnit() != null) {
-            ScheduleBuilder<?> scheduleBuilder = getSchedule(schedule.getTimeUnit(), (int) interval, startTime);
-
-            if (scheduleBuilder != null) {
-                builder.withSchedule(scheduleBuilder);
-            }
-        }
-
-        if (schedule.getStopTime() != null) {
-            Date stopDate = conversionService.convert(schedule.getStopTime(), Date.class);
-            builder.endAt(stopDate);
-        }
-
-        Trigger trigger = builder.build();
+        Trigger trigger = buildTrigger(schedule, idString);
 
         try {
             scheduler.scheduleJob(job, trigger);
@@ -84,6 +59,34 @@ public class SchedulerServiceImpl implements SchedulerService {
         } catch (SchedulerException e) {
             throw new ServerException(MessageError.SCHEDULED_OPERATION_DELETING_EXCEPTION, e);
         }
+    }
+
+    private Trigger buildTrigger(Schedule schedule, String name) {
+        TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
+                .withIdentity(name, OPERATIONS);
+
+        LocalDateTime startTime = schedule.getStartTime();
+        if (startTime == null) {
+            builder.startNow();
+            startTime = generator.now();
+        } else {
+            Date startDate = conversionService.convert(startTime, Date.class);
+            builder.startAt(startDate);
+        }
+
+        long interval = schedule.getInterval();
+        TimeUnit timeUnit = schedule.getTimeUnit();
+        if (interval > 0 && timeUnit != null) {
+            ScheduleBuilder<?> scheduleBuilder = getSchedule(timeUnit, (int) interval, startTime);
+            builder.withSchedule(scheduleBuilder);
+        }
+
+        if (schedule.getStopTime() != null) {
+            Date stopDate = conversionService.convert(schedule.getStopTime(), Date.class);
+            builder.endAt(stopDate);
+        }
+
+        return builder.build();
     }
 
     private ScheduleBuilder<?> getSchedule(TimeUnit timeUnit, int interval, LocalDateTime startTime) {
@@ -113,8 +116,8 @@ public class SchedulerServiceImpl implements SchedulerService {
                         startTime.getDayOfMonth(),
                         startTime.getMonthValue());
                 return CronScheduleBuilder.cronSchedule(expression);
+            default:
+                throw new ServerException("Передан нереализованный timeUnit");
         }
-
-        return null;
     }
 }

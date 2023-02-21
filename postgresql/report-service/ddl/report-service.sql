@@ -23,17 +23,6 @@ CREATE TABLE app.report (
 
 ALTER TABLE app.report OWNER TO "report-service_user";
 
-CREATE TABLE app.report_file (
-    id uuid NOT NULL,
-    data bytea NOT NULL,
-    "user" character varying NOT NULL
-);
-
-ALTER TABLE app.report_file OWNER TO "report-service_user";
-
-ALTER TABLE ONLY app.report_file
-    ADD CONSTRAINT report_file_pk PRIMARY KEY (id);
-
 ALTER TABLE ONLY app.report
     ADD CONSTRAINT report_pk PRIMARY KEY (id);
 

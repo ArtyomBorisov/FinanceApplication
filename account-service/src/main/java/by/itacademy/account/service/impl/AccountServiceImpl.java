@@ -85,11 +85,11 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Page<Account> get(Collection<UUID> uuids, Pageable pageable) {
-        String login = userHolder.getLoginFromContext();
-
         if (uuids == null || uuids.isEmpty()) {
             return get(pageable);
         }
+
+        String login = userHolder.getLoginFromContext();
 
         Page<AccountEntity> entities = accountRepository
                 .findByUserAndIdInOrderByBalance_SumDesc(login, uuids, pageable);
@@ -132,7 +132,7 @@ public class AccountServiceImpl implements AccountService {
 
         AccountEntity updatedEntity = accountRepository.save(entity);
 
-        return this.conversionService.convert(updatedEntity, Account.class);
+        return conversionService.convert(updatedEntity, Account.class);
     }
 
     @Override

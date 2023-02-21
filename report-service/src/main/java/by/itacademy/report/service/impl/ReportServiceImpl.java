@@ -101,13 +101,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public byte[] download(UUID id) {
-        if (isReportReady(id)) {
-            return storageService
-                    .download(id.toString())
-                    .getData();
-        } else {
-            return new byte[0];
-        }
+        return isReportReady(id) ?
+                storageService.download(id.toString()).getData() :
+                new byte[0];
     }
 
     @Override

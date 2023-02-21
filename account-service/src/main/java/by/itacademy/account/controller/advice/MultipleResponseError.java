@@ -3,8 +3,8 @@ package by.itacademy.account.controller.advice;
 import java.util.List;
 
 public class MultipleResponseError {
-    private String logref = "structured_error";
-    private List<ValidationError> errors;
+    private final String logref;
+    private final List<ValidationError> errors;
 
     public MultipleResponseError(String logref, List<ValidationError> errors) {
         this.logref = logref;
@@ -12,6 +12,7 @@ public class MultipleResponseError {
     }
 
     public MultipleResponseError(List<ValidationError> errors) {
+        this.logref = "structured_error";
         this.errors = errors;
     }
 

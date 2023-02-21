@@ -35,18 +35,17 @@ public class AccountValidatorHelperImpl implements AccountValidatorHelper {
 
     @Override
     public boolean isTitleValid(String title, String login, ConstraintValidatorContext context) {
-        boolean valid = true;
-
         if (title == null || title.isEmpty()) {
             addConstraintViolation(MISSING_FIELD, TITLE, context);
-            valid = false;
-
-        } else if (repository.findByUserAndTitle(login, title).isPresent()) {
-            addConstraintViolation(NOT_UNIQUE_FIELD, TITLE, context);
-            valid = false;
+            return false;
         }
 
-        return valid;
+        if (repository.findByUserAndTitle(login, title).isPresent()) {
+            addConstraintViolation(NOT_UNIQUE_FIELD, TITLE, context);
+            return false;
+        }
+
+        return true;
     }
 
     @Override

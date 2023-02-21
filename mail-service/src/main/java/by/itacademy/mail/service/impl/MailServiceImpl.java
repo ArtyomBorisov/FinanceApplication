@@ -37,16 +37,11 @@ public class MailServiceImpl implements MailService {
     @Override
     public boolean sendReport(UUID id, Email email) throws MessagingException {
         String address = email.getAddress();
-
         String url = String.format(reportUrl, id.toString());
-        HttpEntity<?> entity = getHttpEntity();
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.HEAD, entity, String.class);
 
-        boolean statusNoContent = response.getStatusCode().compareTo(HttpStatus.NO_CONTENT) == 0;
-        if (statusNoContent) {
+        if(!isReportExist(url)){
             return false;
         }
-
 
         MimeMessage message = emailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -56,18 +51,31 @@ public class MailServiceImpl implements MailService {
         helper.setSubject("Отчёт " + id);
         helper.setText("");
 
-        HttpEntity<?> entityTextPlain = getHttpEntity(MediaType.TEXT_PLAIN);
+        ByteArrayResource report = getReport(url);
+
+        helper.addAttachment(id + ".xlsx", report);
+        emailSender.send(message);
+        return true;
+    }
+
+    private boolean isReportExist(String url) {
+        HttpEntity<?> entity = getHttpEntity();
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.HEAD, entity, String.class);
+
+        return response.getStatusCode().compareTo(HttpStatus.NO_CONTENT) != 0;
+    }
+
+    private ByteArrayResource getReport(String url) {
+        HttpEntity<?> entity = getHttpEntity(MediaType.TEXT_PLAIN);
         ResponseEntity<ByteArrayResource> responseWithData = restTemplate
-                .exchange(url, HttpMethod.GET, entityTextPlain, ByteArrayResource.class);
+                .exchange(url, HttpMethod.GET, entity, ByteArrayResource.class);
 
         ByteArrayResource resource = responseWithData.getBody();
         if (resource == null) {
             throw new ServerException(MessageError.REPORT_GETTING_EXCEPTION);
         }
 
-        helper.addAttachment(id + ".xlsx", resource);
-        emailSender.send(message);
-        return true;
+        return resource;
     }
 
     private HttpEntity<?> getHttpEntity() {

@@ -101,8 +101,6 @@ public class ScheduledOperationValidator implements ConstraintValidator<CustomVa
         return valid;
     }
 
-
-
     private boolean checkId(UUID id, String url, String field, ConstraintValidatorContext context) {
         boolean valid = true;
 

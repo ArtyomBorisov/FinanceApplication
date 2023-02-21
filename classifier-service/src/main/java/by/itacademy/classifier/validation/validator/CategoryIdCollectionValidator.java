@@ -25,9 +25,7 @@ public class CategoryIdCollectionValidator implements ConstraintValidator<Catego
         boolean valid = true;
 
         for (UUID uuid : uuids) {
-            if (!helper.isCategoryIdExist(uuid, context)) {
-                valid = false;
-            }
+            if (!helper.isCategoryIdExist(uuid, context)) valid = false;
         }
 
         return valid;

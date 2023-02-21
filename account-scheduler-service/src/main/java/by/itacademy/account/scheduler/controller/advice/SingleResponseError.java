@@ -1,8 +1,8 @@
 package by.itacademy.account.scheduler.controller.advice;
 
 public class SingleResponseError {
-    private String logref = "error";
-    private String message;
+    private final String logref;
+    private final String message;
 
     public SingleResponseError(String logref, String message) {
         this.logref = logref;
@@ -10,6 +10,7 @@ public class SingleResponseError {
     }
 
     public SingleResponseError(String message) {
+        this.logref = "error";
         this.message = message;
     }
 

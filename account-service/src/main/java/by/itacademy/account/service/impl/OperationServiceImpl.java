@@ -56,13 +56,12 @@ public class OperationServiceImpl implements OperationService {
         AccountEntity accountEntity = conversionService.convert(account, AccountEntity.class);
 
         if (operation.getDate() == null) {
-            operation.setDate(generator.now());
+            operation.setDate(now);
         }
 
         operation.setId(idOperation);
         operation.setDtCreate(now);
         operation.setDtUpdate(now);
-        operation.setAccount(account);
 
         OperationEntity operationEntity = conversionService.convert(operation, OperationEntity.class);
         operationEntity.setAccountEntity(accountEntity);
@@ -91,23 +90,18 @@ public class OperationServiceImpl implements OperationService {
     public Page<Operation> getByParams(Params params, Pageable pageable) {
         Set<UUID> accounts = params.getAccounts();
         Set<UUID> categories = params.getCategories();
+
+        fillFromAndToTimesIfAbsent(params);
         LocalDate from = params.getFrom();
         LocalDate to = params.getTo();
-        ParamSort sort = params.getSort();
 
+        ParamSort sort = params.getSort();
         List<Sort.Order> orders = getSort(sort);
 
         Pageable sorted = PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 Sort.by(orders));
-
-        if (to == null) {
-            to = generator.now().toLocalDate();
-        }
-        if (from == null) {
-            from = to.minusDays(defaultDayInterval);
-        }
 
         LocalDateTime timeFrom = LocalDateTime.of(from, LocalTime.MIN);
         LocalDateTime timeTo = LocalDateTime.of(to, LocalTime.MAX);
@@ -139,17 +133,11 @@ public class OperationServiceImpl implements OperationService {
 
     @Override
     public Operation get(UUID idAccount, UUID idOperation) {
-        OperationEntity entity = this.operationRepository
+        OperationEntity entity = operationRepository
                 .findByIdAndAccountEntity_Id(idOperation, idAccount)
                 .orElse(null);
 
-        Operation operation = conversionService.convert(entity, Operation.class);
-
-        if (operation != null) {
-            operation.setAccount(accountService.get(idAccount));
-        }
-
-        return operation;
+        return entity != null ? conversionService.convert(entity, Operation.class) : null;
     }
 
     @Transactional
@@ -174,11 +162,7 @@ public class OperationServiceImpl implements OperationService {
         entity.setCurrency(operation.getCurrency());
 
         OperationEntity savedOperation = operationRepository.save(entity);
-        Operation returnedOperation = conversionService.convert(savedOperation, Operation.class);
-        Account account = accountService.get(idAccount);
-        returnedOperation.setAccount(account);
-
-        return returnedOperation;
+        return conversionService.convert(savedOperation, Operation.class);
     }
 
     @Transactional
@@ -193,8 +177,20 @@ public class OperationServiceImpl implements OperationService {
         }
 
         checkDtUpdate(entity.getDtUpdate(), dtUpdate);
-
         operationRepository.delete(entity);
+    }
+
+    private void fillFromAndToTimesIfAbsent(Params params) {
+        LocalDate to = params.getTo();
+        LocalDate from = params.getFrom();
+        if (to == null) {
+            to = generator.now().toLocalDate();
+            params.setTo(to);
+        }
+        if (from == null) {
+            from = to.minusDays(defaultDayInterval);
+            params.setFrom(from);
+        }
     }
 
     private void checkDtUpdate(LocalDateTime dateTime1, LocalDateTime dateTime2) {

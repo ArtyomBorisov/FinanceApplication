@@ -32,32 +32,32 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
 
     @Override
     public boolean isCurrencyIdExist(UUID idCurrency, ConstraintValidatorContext context) {
-        boolean valid = true;
-
         if (idCurrency == null) {
             addConstraintViolation(MISSING_FIELD, ID_CURRENCY, context);
-            valid = false;
-        } else if (!checkId(currencyUrl, idCurrency)) {
-            addConstraintViolation(ID_NOT_EXIST, ID_CURRENCY, context);
-            valid = false;
+            return false;
         }
 
-        return valid;
+        if (!checkId(currencyUrl, idCurrency)) {
+            addConstraintViolation(ID_NOT_EXIST, ID_CURRENCY, context);
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public boolean isCategoryIdExist(UUID idCategory, ConstraintValidatorContext context) {
-        boolean valid = true;
-
         if (idCategory == null) {
             addConstraintViolation(MISSING_FIELD, ID_CATEGORY, context);
-            valid = false;
-        } else if (!checkId(categoryUrl, idCategory)) {
-            addConstraintViolation(ID_NOT_EXIST, ID_CATEGORY, context);
-            valid = false;
+            return false;
         }
 
-        return valid;
+        if (!checkId(categoryUrl, idCategory)) {
+            addConstraintViolation(ID_NOT_EXIST, ID_CATEGORY, context);
+            return false;
+        }
+
+        return true;
     }
 
     private void addConstraintViolation(String message, String name, ConstraintValidatorContext context) {

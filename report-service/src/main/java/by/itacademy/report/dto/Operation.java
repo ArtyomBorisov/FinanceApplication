@@ -14,8 +14,6 @@ public class Operation {
     private UUID category;
     private double value;
     private UUID currency;
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Account account;
 
     public UUID getId() {

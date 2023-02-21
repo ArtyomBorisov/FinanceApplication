@@ -29,8 +29,6 @@ public class OperationValidator implements ConstraintValidator<CustomValid, Oper
         boolean categoryIdValid = classifierHelper.isCategoryIdExist(operation.getCategory(), context);
         boolean valueValid = operationHelper.isValueValid(operation.getValue(), context);
 
-        return currencyIdValid
-                && categoryIdValid
-                && valueValid;
+        return currencyIdValid && categoryIdValid && valueValid;
     }
 }

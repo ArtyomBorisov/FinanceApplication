@@ -25,9 +25,7 @@ public class CurrencyIdCollectionValidator implements ConstraintValidator<Curren
         boolean valid = true;
 
         for (UUID uuid : uuids) {
-            if (!helper.isCurrencyIdExist(uuid, context)) {
-                valid = false;
-            }
+            if (!helper.isCurrencyIdExist(uuid, context)) valid = false;
         }
 
         return valid;
