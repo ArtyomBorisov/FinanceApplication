@@ -47,7 +47,7 @@ public class ParamsValidator implements ConstraintValidator<CustomValid, Params>
                 (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         String type = map.get("type");
 
-        ReportType sort = ReportType.valueOf(type);
+        ReportType sort = ReportType.valueOf(type.toUpperCase());
 
         if (sort == ReportType.BALANCE) {
             return checkParamsForBalanceReport(params, context);
