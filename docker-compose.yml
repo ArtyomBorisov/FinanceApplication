@@ -13,7 +13,6 @@ services:
       - finance_ntwrk
   db:
     build: postgresql
-    image: finance_postgresql:1.0.0
     restart: always
     environment:
       POSTGRES_USER: root
@@ -24,7 +23,6 @@ services:
       - finance_ntwrk
   pgadmin:
     build: pgadmin
-    image: finance_pgadmin:1.0.0
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
@@ -35,7 +33,6 @@ services:
       - finance_ntwrk
   swagger-ui:
     build: swagger-ui
-    image: finance_swagger-ui:1.0.0
     ports:
       - "81:8080"
     networks:
@@ -44,47 +41,46 @@ services:
 
   account-scheduler-service:
     build: account-scheduler-service
-    image: finance_account-scheduler-service:1.0.0
     networks:
       - finance_ntwrk
     depends_on:
       - db
   account-service:
     build: account-service
-    image: finance_account-service:1.0.0
     networks:
       - finance_ntwrk
     depends_on:
       - db
   user-service:
     build: user-service
-    image: finance_user-service:1.0.0
     networks:
       - finance_ntwrk
     depends_on:
       - db
   classifier-service:
     build: classifier-service
-    image: finance_classifier-service:1.0.0
     networks:
       - finance_ntwrk
     depends_on:
       - db
   report-service:
     build: report-service
-    image: finance_report-service:1.0.0
     networks:
       - finance_ntwrk
     depends_on:
       - db
   mail-service:
     build: mail-service
-    image: finance_mail-service:1.0.0
     networks:
       - finance_ntwrk
+  mail-scheduler-service:
+    build: mail-scheduler-service
+    networks:
+      - finance_ntwrk
+    depends_on:
+      - db
   proxy:
     build: proxy
-    image: finance_proxy:1.0.0
     ports:
       - "80:80"
     networks:
@@ -98,6 +94,7 @@ services:
       - swagger-ui
       - pgadmin
       - mail-service
+      - mail-scheduler-service
 networks:
     finance_ntwrk:
       name: finance_ntwrk

@@ -31,9 +31,9 @@ public class ReportController {
 
     @PostMapping("/{type}")
     @ResponseStatus(HttpStatus.CREATED)
-    public void create(@PathVariable ReportType type,
-                       @RequestBody @CustomValid Params params){
-        reportService.createReportExecutionTask(type, params);
+    public String create(@PathVariable ReportType type,
+                         @RequestBody @CustomValid Params params){
+        return reportService.createReportExecutionTask(type, params);
     }
 
     @GetMapping

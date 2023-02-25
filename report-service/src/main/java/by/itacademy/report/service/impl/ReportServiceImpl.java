@@ -47,11 +47,12 @@ public class ReportServiceImpl implements ReportService {
 
     @Transactional
     @Override
-    public void createReportExecutionTask(ReportType type, Params params) {
+    public String createReportExecutionTask(ReportType type, Params params) {
         Report report = createReportDto(type, params);
         ReportEntity reportEntity = conversionService.convert(report, ReportEntity.class);
         reportRepository.save(reportEntity);
         reportExecutionService.startExecution(type, params, report.getId());
+        return report.getId().toString();
     }
 
     @Override
