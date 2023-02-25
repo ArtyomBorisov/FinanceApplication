@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    driver-class-name: "${spring.datasource.driver-class-name}"
+    url: "${spring.datasource.url}"
+    username: "${spring.datasource.username}"
+    password: "${spring.datasource.password}"
+
+  jackson:
+    mapper:
+      accept_case_insensitive_properties: true
+
+urls:
+  report: http://report-service:8080/report
+  mail: http://mail-service:8080/mail/report
