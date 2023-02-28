@@ -17,10 +17,6 @@ public class CategoryIdValidator implements ConstraintValidator<CategoryExist, U
 
     @Override
     public boolean isValid(UUID id, ConstraintValidatorContext context) {
-        if (id == null) {
-            return false;
-        }
-
-        return helper.isCategoryIdExist(id, context);
+        return id != null && helper.isCategoryIdExist(id, context);
     }
 }

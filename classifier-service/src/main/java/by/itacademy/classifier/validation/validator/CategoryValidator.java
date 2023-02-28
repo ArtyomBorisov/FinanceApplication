@@ -21,14 +21,14 @@ public class CategoryValidator implements ConstraintValidator<CustomValid, Categ
 
     @Override
     public boolean isValid(Category category, ConstraintValidatorContext context) {
-        if (category == null) {
-            return false;
-        }
-
         if (!userHolder.isAdmin()) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(MessageError.FORBIDDEN)
                     .addConstraintViolation();
+            return false;
+        }
+
+        if (category == null) {
             return false;
         }
 

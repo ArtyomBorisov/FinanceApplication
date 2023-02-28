@@ -21,14 +21,14 @@ public class CurrencyValidator implements ConstraintValidator<CustomValid, Curre
 
     @Override
     public boolean isValid(Currency currency, ConstraintValidatorContext context) {
-        if (currency == null) {
-            return false;
-        }
-
         if (!userHolder.isAdmin()) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(MessageError.FORBIDDEN)
                     .addConstraintViolation();
+            return false;
+        }
+
+        if (currency == null) {
             return false;
         }
 

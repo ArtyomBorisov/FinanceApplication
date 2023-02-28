@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -37,48 +38,52 @@ public class CurrencyService implements ClassifierService<Currency, UUID> {
     @Transactional
     @Override
     public Currency create(Currency currency) {
-        UUID id = generator.generateUUID();
-        LocalDateTime now = generator.now();
-
-        currency.setId(id);
-        currency.setDtCreate(now);
-        currency.setDtUpdate(now);
-
-        CurrencyEntity entity = conversionService.convert(currency, CurrencyEntity.class);
-        CurrencyEntity savedEntity = currencyRepository.save(entity);
+        generateIdAndTimeAndAddToCurrency(currency);
+        CurrencyEntity entityForSaving = conversionService.convert(currency, CurrencyEntity.class);
+        CurrencyEntity savedEntity = currencyRepository.save(entityForSaving);
         return conversionService.convert(savedEntity, Currency.class);
     }
 
     @Override
     public Page<Currency> get(Pageable pageable) {
         Page<CurrencyEntity> entities = currencyRepository.findByOrderByTitle(pageable);
-
-        List<Currency> currencies = entities.stream()
-                .map(entity -> conversionService.convert(entity, Currency.class))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(currencies, pageable, entities.getTotalElements());
+        return getCurrencyPage(entities, pageable);
     }
 
     @Override
     public Currency get(UUID uuid) {
-        CurrencyEntity entity = currencyRepository.findById(uuid).orElse(null);
-
-        return entity != null ? conversionService.convert(entity, Currency.class) : null;
+        return currencyRepository.findById(uuid)
+                .map(entity -> conversionService.convert(entity, Currency.class))
+                .orElse(null);
     }
 
     @Override
     public Page<Currency> get(Collection<UUID> collectionId, Pageable pageable) {
-        if (collectionId == null || collectionId.isEmpty()) {
+        if (CollectionUtils.isEmpty(collectionId)) {
             return get(pageable);
         }
 
         Page<CurrencyEntity> entities = currencyRepository.findByIdInOrderByTitle(collectionId, pageable);
+        return getCurrencyPage(entities, pageable);
+    }
 
-        List<Currency> currencies = entities.stream()
+    private void generateIdAndTimeAndAddToCurrency(Currency currency) {
+        UUID id = generator.generateUUID();
+        LocalDateTime now = generator.now();
+        currency.setId(id);
+        currency.setDtCreate(now);
+        currency.setDtUpdate(now);
+    }
+
+    private Page<Currency> getCurrencyPage(Page<CurrencyEntity> entities, Pageable pageable) {
+        List<Currency> currencies = convertToDto(entities);
+        long totalElements = entities.getTotalElements();
+        return new PageImpl<>(currencies, pageable, totalElements);
+    }
+
+    private List<Currency> convertToDto(Page<CurrencyEntity> entities) {
+        return entities.stream()
                 .map(entity -> conversionService.convert(entity, Currency.class))
                 .collect(Collectors.toList());
-
-        return new PageImpl<>(currencies, pageable, entities.getTotalElements());
     }
 }

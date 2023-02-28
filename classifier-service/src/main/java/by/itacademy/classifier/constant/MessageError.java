@@ -16,6 +16,8 @@ public final class MessageError {
 
     public static final String FORBIDDEN = "Forbidden";
 
+    public static final String SECURITY_EXCEPTION = "Ошибка безопасности";
+
     public static final String INCORRECT_PARAMS
             = "Запрос содержит некорретные данные. Измените запрос и отправьте его ещё раз";
 

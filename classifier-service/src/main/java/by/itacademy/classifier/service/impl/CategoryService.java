@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -35,48 +36,52 @@ public class CategoryService implements ClassifierService<Category, UUID> {
     @Transactional
     @Override
     public Category create(Category category) {
-        UUID id = generator.generateUUID();
-        LocalDateTime now = generator.now();
-
-        category.setId(id);
-        category.setDtCreate(now);
-        category.setDtUpdate(now);
-
-        CategoryEntity entity = conversionService.convert(category, CategoryEntity.class);
-        CategoryEntity savedEntity = categoryRepository.save(entity);
+        generateIdAndTimeAndAddToCategory(category);
+        CategoryEntity entityForSaving = conversionService.convert(category, CategoryEntity.class);
+        CategoryEntity savedEntity = categoryRepository.save(entityForSaving);
         return conversionService.convert(savedEntity, Category.class);
     }
 
     @Override
     public Page<Category> get(Pageable pageable) {
         Page<CategoryEntity> entities = categoryRepository.findByOrderByTitle(pageable);
-
-        List<Category> categories = entities.stream()
-                .map(entity -> conversionService.convert(entity, Category.class))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(categories, pageable, entities.getTotalElements());
+        return getCategoryPage(entities, pageable);
     }
 
     @Override
     public Category get(UUID uuid) {
-        CategoryEntity entity = categoryRepository.findById(uuid).orElse(null);
-
-        return entity != null ? conversionService.convert(entity, Category.class) : null;
+        return categoryRepository.findById(uuid)
+                .map(entity -> conversionService.convert(entity, Category.class))
+                .orElse(null);
     }
 
     @Override
     public Page<Category> get(Collection<UUID> collectionId, Pageable pageable) {
-        if (collectionId == null || collectionId.isEmpty()) {
+        if (CollectionUtils.isEmpty(collectionId)) {
             return get(pageable);
         }
 
         Page<CategoryEntity> entities = categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
+        return getCategoryPage(entities, pageable);
+    }
 
-        List<Category> categories = entities.stream()
+    private void generateIdAndTimeAndAddToCategory(Category category) {
+        UUID id = generator.generateUUID();
+        LocalDateTime now = generator.now();
+        category.setId(id);
+        category.setDtCreate(now);
+        category.setDtUpdate(now);
+    }
+
+    private Page<Category> getCategoryPage(Page<CategoryEntity> entities, Pageable pageable) {
+        List<Category> categories = convertToDto(entities);
+        long totalElements = entities.getTotalElements();
+        return new PageImpl<>(categories, pageable, totalElements);
+    }
+
+    private List<Category> convertToDto(Page<CategoryEntity> entities) {
+        return entities.stream()
                 .map(entity -> conversionService.convert(entity, Category.class))
                 .collect(Collectors.toList());
-
-        return new PageImpl<>(categories, pageable, entities.getTotalElements());
     }
 }

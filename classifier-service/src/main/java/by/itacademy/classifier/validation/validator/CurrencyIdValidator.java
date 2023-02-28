@@ -17,10 +17,6 @@ public class CurrencyIdValidator implements ConstraintValidator<CurrencyExist, U
 
     @Override
     public boolean isValid(UUID id, ConstraintValidatorContext context) {
-        if (id == null) {
-            return false;
-        }
-
-        return helper.isCurrencyIdExist(id, context);
+        return id != null && helper.isCurrencyIdExist(id, context);
     }
 }
