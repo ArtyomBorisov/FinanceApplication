@@ -7,7 +7,6 @@ import by.itacademy.classifier.service.ClassifierService;
 import by.itacademy.classifier.utils.Generator;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +14,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -45,7 +43,7 @@ public class CategoryService implements ClassifierService<Category, UUID> {
     @Override
     public Page<Category> get(Pageable pageable) {
         Page<CategoryEntity> entities = categoryRepository.findByOrderByTitle(pageable);
-        return getCategoryPage(entities, pageable);
+        return convertToDtoPage(entities);
     }
 
     @Override
@@ -62,7 +60,7 @@ public class CategoryService implements ClassifierService<Category, UUID> {
         }
 
         Page<CategoryEntity> entities = categoryRepository.findByIdInOrderByTitle(collectionId, pageable);
-        return getCategoryPage(entities, pageable);
+        return convertToDtoPage(entities);
     }
 
     private void generateIdAndTimeAndAddToCategory(Category category) {
@@ -73,15 +71,7 @@ public class CategoryService implements ClassifierService<Category, UUID> {
         category.setDtUpdate(now);
     }
 
-    private Page<Category> getCategoryPage(Page<CategoryEntity> entities, Pageable pageable) {
-        List<Category> categories = convertToDto(entities);
-        long totalElements = entities.getTotalElements();
-        return new PageImpl<>(categories, pageable, totalElements);
-    }
-
-    private List<Category> convertToDto(Page<CategoryEntity> entities) {
-        return entities.stream()
-                .map(entity -> conversionService.convert(entity, Category.class))
-                .collect(Collectors.toList());
+    private Page<Category> convertToDtoPage(Page<CategoryEntity> entities) {
+        return entities.map(entity -> conversionService.convert(entity, Category.class));
     }
 }

@@ -37,14 +37,7 @@ public class AccountUpdatingValidator implements ConstraintValidator<AccountUpda
         }
 
         String login = userHolder.getLoginFromContext();
-
-//        получаю значение id из path_variable,
-//        т.к. нужно сравнить старое и новое название счёта,
-//        чтобы понять, нужно ли проверять новое название на уникальность и null
-        Map<String, String> map =
-                (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-        String idStr = map.get("uuid");
-        UUID id = UUID.fromString(idStr);
+        UUID id = getIdFromPathVariable();
 
         boolean typeValid = accountHelper.isAccountTypeValid(account.getType(), context);
         boolean currencyIdValid = classifierHelper.isCurrencyIdExist(account.getCurrency(), context);
@@ -58,5 +51,12 @@ public class AccountUpdatingValidator implements ConstraintValidator<AccountUpda
         }
 
         return typeValid && currencyIdValid && accountIdValid && titleValid;
+    }
+
+    private UUID getIdFromPathVariable() {
+        Map<String, String> map =
+                (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        String idStr = map.get("uuid");
+        return UUID.fromString(idStr);
     }
 }

@@ -37,7 +37,7 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
             return false;
         }
 
-        if (!checkId(currencyUrl, idCurrency)) {
+        if (!isIdValid(currencyUrl, idCurrency)) {
             addConstraintViolation(ID_NOT_EXIST, ID_CURRENCY, context);
             return false;
         }
@@ -52,7 +52,7 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
             return false;
         }
 
-        if (!checkId(categoryUrl, idCategory)) {
+        if (!isIdValid(categoryUrl, idCategory)) {
             addConstraintViolation(ID_NOT_EXIST, ID_CATEGORY, context);
             return false;
         }
@@ -67,7 +67,7 @@ public class ClassifierValidatorHelperImpl implements ClassifierValidatorHelper 
                 .addConstraintViolation();
     }
 
-    private boolean checkId(String url, UUID id) throws ServerException {
+    private boolean isIdValid(String url, UUID id) throws ServerException {
         String urlWithId = url + "/" + id;
         try {
             restTemplate.getForObject(urlWithId, String.class);

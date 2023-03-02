@@ -17,12 +17,12 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -49,28 +49,14 @@ public class OperationServiceImpl implements OperationService {
     @Transactional
     @Override
     public Operation add(UUID idAccount, Operation operation) {
-        UUID idOperation = generator.generateUUID();
-        LocalDateTime now = generator.now();
-
+        generateIdAndTimeAndAddToOperation(operation);
         Account account = accountService.get(idAccount);
         AccountEntity accountEntity = conversionService.convert(account, AccountEntity.class);
-
-        if (operation.getDate() == null) {
-            operation.setDate(now);
-        }
-
-        operation.setId(idOperation);
-        operation.setDtCreate(now);
-        operation.setDtUpdate(now);
-
         OperationEntity operationEntity = conversionService.convert(operation, OperationEntity.class);
         operationEntity.setAccountEntity(accountEntity);
-
         OperationEntity savedOperation = operationRepository.save(operationEntity);
-
         Operation returnedOperation = conversionService.convert(savedOperation, Operation.class);
         returnedOperation.setAccount(account);
-
         return returnedOperation;
     }
 
@@ -79,65 +65,25 @@ public class OperationServiceImpl implements OperationService {
         Page<OperationEntity> entities = operationRepository
                 .findByAccountEntity_IdOrderByDtCreateAsc(idAccount, pageable);
 
-        List<Operation> operations = entities.stream()
-                .map(entity -> conversionService.convert(entity, Operation.class))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(operations, pageable, entities.getTotalElements());
+        return convertToDtoPage(entities);
     }
 
     @Override
     public Page<Operation> getByParams(Params params, Pageable pageable) {
-        Set<UUID> accounts = params.getAccounts();
-        Set<UUID> categories = params.getCategories();
-
         fillFromAndToTimesIfAbsent(params);
-        LocalDate from = params.getFrom();
-        LocalDate to = params.getTo();
-
         ParamSort sort = params.getSort();
-        List<Sort.Order> orders = getSort(sort);
-
-        Pageable sorted = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by(orders));
-
-        LocalDateTime timeFrom = LocalDateTime.of(from, LocalTime.MIN);
-        LocalDateTime timeTo = LocalDateTime.of(to, LocalTime.MAX);
-        Specification<OperationEntity> specification = Specification
-                .where(OperationRepository.dateGreaterThan(timeFrom))
-                .and(OperationRepository.dateLessThan(timeTo));
-
-        if (accounts != null && !accounts.isEmpty()) {
-            specification.and(OperationRepository.accountsIdIn(accounts));
-        }
-        if (categories != null && !categories.isEmpty()) {
-            specification.and(OperationRepository.categoriesIdIn(categories));
-        }
-
-        Page<OperationEntity> entities = operationRepository.findAll(specification, sorted);
-
-        List<Operation> operations = entities.stream()
-                .map(operationEntity -> {
-                    Operation operation = conversionService.convert(operationEntity, Operation.class);
-                    UUID idAccount = operationEntity.getAccountEntity().getId();
-                    Account account = accountService.get(idAccount);
-                    operation.setAccount(account);
-                    return operation;
-                })
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(operations, pageable, entities.getTotalElements());
+        Pageable sortPageable = convertToSortPageable(sort, pageable);
+        Specification<OperationEntity> specification = getSpecification(params);
+        Page<OperationEntity> entities = operationRepository.findAll(specification, sortPageable);
+        return convertToDtoWithAccountPage(entities);
     }
 
     @Override
     public Operation get(UUID idAccount, UUID idOperation) {
-        OperationEntity entity = operationRepository
+        return operationRepository
                 .findByIdAndAccountEntity_Id(idOperation, idAccount)
+                .map(entity -> conversionService.convert(entity, Operation.class))
                 .orElse(null);
-
-        return entity != null ? conversionService.convert(entity, Operation.class) : null;
     }
 
     @Transactional
@@ -152,15 +98,7 @@ public class OperationServiceImpl implements OperationService {
         }
 
         checkDtUpdate(entity.getDtUpdate(), dtUpdate);
-
-        if (operation.getDate() != null) {
-            entity.setDate(operation.getDate());
-        }
-        entity.setDescription(operation.getDescription());
-        entity.setCategory(operation.getCategory());
-        entity.setValue(operation.getValue());
-        entity.setCurrency(operation.getCurrency());
-
+        updateOperationEntity(entity, operation);
         OperationEntity savedOperation = operationRepository.save(entity);
         return conversionService.convert(savedOperation, Operation.class);
     }
@@ -168,16 +106,27 @@ public class OperationServiceImpl implements OperationService {
     @Transactional
     @Override
     public void delete(UUID idAccount, UUID idOperation, LocalDateTime dtUpdate) {
-        OperationEntity entity = operationRepository
-                .findByIdAndAccountEntity_Id(idOperation, idAccount)
-                .orElse(null);
+        operationRepository.findByIdAndAccountEntity_Id(idOperation, idAccount)
+                .ifPresent(entity -> {
+                    checkDtUpdate(entity.getDtUpdate(), dtUpdate);
+                    operationRepository.delete(entity);
+                });
+    }
 
-        if (entity == null) {
-            return;
+    private void generateIdAndTimeAndAddToOperation(Operation operation) {
+        UUID uuid = generator.generateUUID();
+        LocalDateTime now = generator.now();
+
+        if (operation.getDate() == null) {
+            operation.setDate(now);
         }
+        operation.setId(uuid);
+        operation.setDtCreate(now);
+        operation.setDtUpdate(now);
+    }
 
-        checkDtUpdate(entity.getDtUpdate(), dtUpdate);
-        operationRepository.delete(entity);
+    private Page<Operation> convertToDtoPage(Page<OperationEntity> entities) {
+        return entities.map(entity -> conversionService.convert(entity, Operation.class));
     }
 
     private void fillFromAndToTimesIfAbsent(Params params) {
@@ -193,13 +142,7 @@ public class OperationServiceImpl implements OperationService {
         }
     }
 
-    private void checkDtUpdate(LocalDateTime dateTime1, LocalDateTime dateTime2) {
-        if (dateTime1.compareTo(dateTime2) != 0) {
-            throw new OptimisticLockException();
-        }
-    }
-
-    private List<Sort.Order> getSort(ParamSort paramSort) {
+    private Pageable convertToSortPageable(ParamSort paramSort, Pageable pageable) {
         List<Sort.Order> orders = new ArrayList<>();
         if (paramSort == ParamSort.BY_DATE) {
             orders.add(new Sort.Order(Sort.Direction.ASC, "date"));
@@ -207,6 +150,57 @@ public class OperationServiceImpl implements OperationService {
             orders.add(new Sort.Order(Sort.Direction.ASC, "category"));
             orders.add(new Sort.Order(Sort.Direction.ASC, "value"));
         }
-        return orders;
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
+    }
+
+    private Specification<OperationEntity> getSpecification(Params params) {
+        Set<UUID> accounts = params.getAccounts();
+        Set<UUID> categories = params.getCategories();
+        LocalDate from = params.getFrom();
+        LocalDate to = params.getTo();
+
+        LocalDateTime timeFrom = LocalDateTime.of(from, LocalTime.MIN);
+        LocalDateTime timeTo = LocalDateTime.of(to, LocalTime.MAX);
+        Specification<OperationEntity> specification = Specification
+                .where(OperationRepository.dateGreaterThan(timeFrom))
+                .and(OperationRepository.dateLessThan(timeTo));
+
+        if (!CollectionUtils.isEmpty(accounts)) {
+            specification.and(OperationRepository.accountsIdIn(accounts));
+        }
+        if (!CollectionUtils.isEmpty(categories)) {
+            specification.and(OperationRepository.categoriesIdIn(categories));
+        }
+
+        return specification;
+    }
+
+    private Page<Operation> convertToDtoWithAccountPage(Page<OperationEntity> entities) {
+        return entities.map(operationEntity -> {
+            Operation operation = conversionService.convert(operationEntity, Operation.class);
+            UUID idAccount = operationEntity.getAccountEntity().getId();
+            Account account = accountService.get(idAccount);
+            operation.setAccount(account);
+            return operation;
+        });
+    }
+
+    private void checkDtUpdate(LocalDateTime dateTime1, LocalDateTime dateTime2) {
+        if (dateTime1.compareTo(dateTime2) != 0) {
+            throw new OptimisticLockException();
+        }
+    }
+
+
+
+    private void updateOperationEntity(OperationEntity entity, Operation operation) {
+        if (operation.getDate() != null) {
+            entity.setDate(operation.getDate());
+        }
+        entity.setDescription(operation.getDescription());
+        entity.setCategory(operation.getCategory());
+        entity.setValue(operation.getValue());
+        entity.setCurrency(operation.getCurrency());
     }
 }

@@ -7,7 +7,6 @@ import by.itacademy.classifier.service.ClassifierService;
 import by.itacademy.classifier.utils.Generator;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +14,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -47,7 +44,7 @@ public class CurrencyService implements ClassifierService<Currency, UUID> {
     @Override
     public Page<Currency> get(Pageable pageable) {
         Page<CurrencyEntity> entities = currencyRepository.findByOrderByTitle(pageable);
-        return getCurrencyPage(entities, pageable);
+        return getCurrencyPage(entities);
     }
 
     @Override
@@ -64,7 +61,7 @@ public class CurrencyService implements ClassifierService<Currency, UUID> {
         }
 
         Page<CurrencyEntity> entities = currencyRepository.findByIdInOrderByTitle(collectionId, pageable);
-        return getCurrencyPage(entities, pageable);
+        return getCurrencyPage(entities);
     }
 
     private void generateIdAndTimeAndAddToCurrency(Currency currency) {
@@ -75,15 +72,7 @@ public class CurrencyService implements ClassifierService<Currency, UUID> {
         currency.setDtUpdate(now);
     }
 
-    private Page<Currency> getCurrencyPage(Page<CurrencyEntity> entities, Pageable pageable) {
-        List<Currency> currencies = convertToDto(entities);
-        long totalElements = entities.getTotalElements();
-        return new PageImpl<>(currencies, pageable, totalElements);
-    }
-
-    private List<Currency> convertToDto(Page<CurrencyEntity> entities) {
-        return entities.stream()
-                .map(entity -> conversionService.convert(entity, Currency.class))
-                .collect(Collectors.toList());
+    private Page<Currency> getCurrencyPage(Page<CurrencyEntity> entities) {
+        return entities.map(entity -> conversionService.convert(entity, Currency.class));
     }
 }

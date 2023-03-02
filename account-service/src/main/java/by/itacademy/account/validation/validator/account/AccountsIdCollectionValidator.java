@@ -3,6 +3,7 @@ package by.itacademy.account.validation.validator.account;
 import by.itacademy.account.service.UserHolder;
 import by.itacademy.account.validation.annotation.AccountExist;
 import by.itacademy.account.validation.validator.helper.AccountValidatorHelper;
+import org.springframework.util.CollectionUtils;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -22,7 +23,7 @@ public class AccountsIdCollectionValidator implements ConstraintValidator<Accoun
 
     @Override
     public boolean isValid(Collection<UUID> collection, ConstraintValidatorContext context) {
-        if (collection == null || collection.isEmpty()) {
+        if (CollectionUtils.isEmpty(collection)) {
             return true;
         }
 

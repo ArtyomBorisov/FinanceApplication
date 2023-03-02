@@ -32,14 +32,14 @@ public class OperationIdValidator implements ConstraintValidator<OperationExist,
         }
 
         String login = userHolder.getLoginFromContext();
+        UUID idAccount = getAccountIdFromPathVariable();
+        return operationHelper.isOperationIdExist(idOperation, idAccount, login, context);
+    }
 
-//        получаю значение id из path_variable,
-//        т.к. нужно проверить относится ли данная операция к счёту
+    private UUID getAccountIdFromPathVariable() {
         Map<String, String> map =
                 (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         String idAccountStr = map.get("uuid");
-        UUID idAccount = UUID.fromString(idAccountStr);
-
-        return operationHelper.isOperationIdExist(idOperation, idAccount, login, context);
+        return UUID.fromString(idAccountStr);
     }
 }

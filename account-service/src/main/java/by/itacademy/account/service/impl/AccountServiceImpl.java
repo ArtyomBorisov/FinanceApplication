@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -47,98 +48,85 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     @Override
     public Account add(Account account) {
-        String login = userHolder.getLoginFromContext();
-
         UUID uuid = generator.generateUUID();
         LocalDateTime now = generator.now();
-
-        account.setId(uuid);
-        account.setDtCreate(now);
-        account.setDtUpdate(now);
-        account.setUser(login);
-
-        BalanceEntity balanceEntity = BalanceEntity.Builder.createBuilder()
-                .setId(uuid)
-                .setDtUpdate(now)
-                .setSum(0)
-                .build();
+        addIdAndTimeAndLoginToAccount(account, uuid, now);
+        BalanceEntity balanceEntity = BalanceEntity.createDefaultBalance(uuid, now);
 
         BalanceEntity savedBalance = balanceRepository.save(balanceEntity);
-        AccountEntity accountEntity = conversionService.convert(account, AccountEntity.class);
-        accountEntity.setBalance(savedBalance);
-        AccountEntity savedAccount = accountRepository.save(accountEntity);
+        AccountEntity accountForSaving = conversionService.convert(account, AccountEntity.class);
+        accountForSaving.setBalance(savedBalance);
+        AccountEntity savedAccount = accountRepository.save(accountForSaving);
         return conversionService.convert(savedAccount, Account.class);
     }
 
     @Override
     public Page<Account> get(Pageable pageable) {
         String login = userHolder.getLoginFromContext();
-
         Page<AccountEntity> entities = accountRepository.findByUserOrderByBalance_SumDesc(login, pageable);
-
-        List<Account> accounts = entities.stream()
-                .map(entity -> conversionService.convert(entity, Account.class))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(accounts, pageable, entities.getTotalElements());
+        return convertToDtoPage(entities);
     }
 
     @Override
     public Page<Account> get(Collection<UUID> uuids, Pageable pageable) {
-        if (uuids == null || uuids.isEmpty()) {
+        if (CollectionUtils.isEmpty(uuids)) {
             return get(pageable);
         }
 
         String login = userHolder.getLoginFromContext();
-
         Page<AccountEntity> entities = accountRepository
                 .findByUserAndIdInOrderByBalance_SumDesc(login, uuids, pageable);
-
-        List<Account> accounts = entities.stream()
-                .map(entity -> conversionService.convert(entity, Account.class))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(accounts, pageable, entities.getTotalElements());
+        return convertToDtoPage(entities);
     }
 
     @Override
     public Account get(UUID id) {
         String login = userHolder.getLoginFromContext();
-
-        AccountEntity entity = accountRepository.findByUserAndId(login, id).orElse(null);
-
-        return entity != null ? conversionService.convert(entity, Account.class) : null;
+        return accountRepository.findByUserAndId(login, id)
+                .map(entity -> conversionService.convert(entity, Account.class))
+                .orElse(null);
     }
 
     @Transactional
     @Override
     public Account update(Account account, UUID id, LocalDateTime dtUpdate) {
         String login = userHolder.getLoginFromContext();
-
         AccountEntity entity = accountRepository.findByUserAndId(login, id).orElse(null);
 
         if (entity == null) {
             return null;
         }
-
         if (entity.getDtUpdate().compareTo(dtUpdate) != 0) {
             throw new OptimisticLockException();
         }
 
-        entity.setCurrency(account.getCurrency());
-        entity.setDescription(account.getDescription());
-        entity.setTitle(account.getTitle());
-        entity.setType(account.getType().toString());
-
+        updateEntity(entity, account);
         AccountEntity updatedEntity = accountRepository.save(entity);
-
         return conversionService.convert(updatedEntity, Account.class);
     }
 
     @Override
     public boolean isAccountExist(UUID id) {
         String login = userHolder.getLoginFromContext();
-
         return accountRepository.existsAccountEntityByUserAndId(login, id);
+    }
+
+    private void addIdAndTimeAndLoginToAccount(Account account, UUID uuid, LocalDateTime now) {
+        String login = userHolder.getLoginFromContext();
+        account.setId(uuid);
+        account.setDtCreate(now);
+        account.setDtUpdate(now);
+        account.setUser(login);
+    }
+
+    private Page<Account> convertToDtoPage(Page<AccountEntity> entities) {
+        return entities.map(entity -> conversionService.convert(entity, Account.class));
+    }
+
+    private void updateEntity(AccountEntity entity, Account account) {
+        entity.setCurrency(account.getCurrency());
+        entity.setDescription(account.getDescription());
+        entity.setTitle(account.getTitle());
+        entity.setType(account.getType().toString());
     }
 }
