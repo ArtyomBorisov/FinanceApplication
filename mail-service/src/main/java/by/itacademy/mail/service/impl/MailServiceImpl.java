@@ -36,26 +36,30 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public boolean sendReport(UUID id, Email email) throws MessagingException {
-        String address = email.getAddress();
-        String url = String.format(reportUrl, id.toString());
-
-        if(!isReportExist(url)){
+        String urlWithId = addIdToUrl(id);
+        if(!isReportExist(urlWithId)){
             return false;
         }
-
-        MimeMessage message = emailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-        helper.setFrom(from);
-        helper.setTo(address);
-        helper.setSubject("Отчёт " + id);
-        helper.setText("");
-
-        ByteArrayResource report = getReport(url);
-
-        helper.addAttachment(id + ".xlsx", report);
+        MimeMessage message = createMessage(id, email);
         emailSender.send(message);
         return true;
+    }
+
+    private MimeMessage createMessage(UUID id, Email email) throws MessagingException {
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setFrom(from);
+        helper.setTo(email.getAddress());
+        helper.setSubject("Отчёт " + id);
+        helper.setText("");
+        String urlWithId = addIdToUrl(id);
+        ByteArrayResource report = getReport(urlWithId);
+        helper.addAttachment(id + ".xlsx", report);
+        return message;
+    }
+
+    private String addIdToUrl(UUID id) {
+        return String.format(reportUrl, id.toString());
     }
 
     private boolean isReportExist(String url) {

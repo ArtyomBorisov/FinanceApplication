@@ -12,15 +12,12 @@ import by.itacademy.account.scheduler.service.UserHolder;
 import by.itacademy.account.scheduler.utils.Generator;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -47,19 +44,12 @@ public class ScheduledOperationServiceImpl implements ScheduledOperationService 
     @Transactional
     @Override
     public ScheduledOperation add(ScheduledOperation scheduledOperation) {
+        UUID id = generateIdAndTimeAndAddToOperation(scheduledOperation);
         Operation operation = scheduledOperation.getOperation();
         Schedule schedule = scheduledOperation.getSchedule();
-
-        UUID id = generator.generateUUID();
-        LocalDateTime now = generator.now();
-
-        scheduledOperation.setId(id);
-        scheduledOperation.setDtCreate(now);
-        scheduledOperation.setDtUpdate(now);
-
         operation.setUser(userHolder.getLoginFromContext());
-        ScheduledOperationEntity entity = conversionService.convert(scheduledOperation, ScheduledOperationEntity.class);
-        ScheduledOperationEntity savedOperation = scheduledOperationRepository.save(entity);
+        ScheduledOperationEntity entityForSaving = conversionService.convert(scheduledOperation, ScheduledOperationEntity.class);
+        ScheduledOperationEntity savedOperation = scheduledOperationRepository.save(entityForSaving);
         schedulerService.addScheduledOperation(schedule, id);
         return conversionService.convert(savedOperation, ScheduledOperation.class);
     }
@@ -67,59 +57,65 @@ public class ScheduledOperationServiceImpl implements ScheduledOperationService 
     @Override
     public ScheduledOperation get(UUID id) {
         String login = userHolder.getLoginFromContext();
-
-        ScheduledOperationEntity entity = scheduledOperationRepository.findByUserAndId(login, id).orElse(null);
-
-        return entity != null ? conversionService.convert(entity, ScheduledOperation.class) : null;
+        return scheduledOperationRepository.findByUserAndId(login, id)
+                .map(entity -> conversionService.convert(entity, ScheduledOperation.class))
+                .orElse(null);
     }
 
     @Override
     public Page<ScheduledOperation> get(Pageable pageable) {
         String login = userHolder.getLoginFromContext();
-
         Page<ScheduledOperationEntity> entities =
                 scheduledOperationRepository.findByUserOrderByDtCreateAsc(login, pageable);
-
-        List<ScheduledOperation> operations = entities.stream()
-                .map(entity -> conversionService.convert(entity, ScheduledOperation.class))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(operations, pageable, entities.getTotalElements());
+        return convertToDtoPage(entities);
     }
 
     @Transactional
     @Override
     public ScheduledOperation update(ScheduledOperation scheduledOperation, UUID id, LocalDateTime dtUpdate) {
         String login = userHolder.getLoginFromContext();
-
-        Operation operation = scheduledOperation.getOperation();
-        Schedule schedule = scheduledOperation.getSchedule();
-
         ScheduledOperationEntity entity = scheduledOperationRepository.findByUserAndId(login, id).orElse(null);
 
         if (entity == null) {
             return null;
         }
-
         if (dtUpdate.compareTo(entity.getDtUpdate()) != 0) {
             throw new OptimisticLockException();
         }
 
+        updateEntity(entity, scheduledOperation);
+        ScheduledOperationEntity updatedOperation = scheduledOperationRepository.save(entity);
+        schedulerService.deleteScheduledOperation(id);
+        Schedule schedule = scheduledOperation.getSchedule();
+        schedulerService.addScheduledOperation(schedule, id);
+        return conversionService.convert(updatedOperation, ScheduledOperation.class);
+    }
+
+    private UUID generateIdAndTimeAndAddToOperation(ScheduledOperation scheduledOperation) {
+        UUID id = generator.generateUUID();
+        LocalDateTime now = generator.now();
+        scheduledOperation.setId(id);
+        scheduledOperation.setDtCreate(now);
+        scheduledOperation.setDtUpdate(now);
+        return id;
+    }
+
+    private Page<ScheduledOperation> convertToDtoPage(Page<ScheduledOperationEntity> entities) {
+        return entities.map(entity -> conversionService.convert(entity, ScheduledOperation.class));
+    }
+
+    private void updateEntity(ScheduledOperationEntity entity, ScheduledOperation dto) {
+        Operation operation = dto.getOperation();
+        Schedule schedule = dto.getSchedule();
+
         entity.setStartTime(schedule.getStartTime());
         entity.setStopTime(schedule.getStopTime());
         entity.setInterval(schedule.getInterval());
-        entity.setTimeUnit(schedule.getTimeUnit() == null ? null : schedule.getTimeUnit().toString());
+        entity.setTimeUnit(schedule.getTimeUnit() != null ? schedule.getTimeUnit().toString() : null);
         entity.setAccount(operation.getAccount());
         entity.setDescription(operation.getDescription());
         entity.setValue(operation.getValue());
         entity.setCurrency(operation.getCurrency());
         entity.setCategory(operation.getCategory());
-
-        ScheduledOperationEntity updatedOperation = scheduledOperationRepository.save(entity);
-
-        schedulerService.deleteScheduledOperation(id);
-        schedulerService.addScheduledOperation(schedule, id);
-
-        return conversionService.convert(updatedOperation, ScheduledOperation.class);
     }
 }

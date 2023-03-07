@@ -40,11 +40,9 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
     public MonthlyReport get() {
         String login = userHolder.getLoginFromContext();
 
-        MonthlyReportEntity foundEntity = repository.findById(login).orElse(null);
-
-        return foundEntity != null ?
-                new MonthlyReport(foundEntity.getEmail(), foundEntity.getReportType()) :
-                null;
+        return repository.findById(login)
+                .map(entity -> new MonthlyReport(entity.getEmail(), entity.getReportType()))
+                .orElse(null);
     }
 
     @Override
