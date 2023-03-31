@@ -26,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class CurrencyServiceTest {
-
+class CurrencyServiceTest {
     @Mock
     private CurrencyRepository repository;
     @Mock
@@ -47,7 +46,7 @@ public class CurrencyServiceTest {
     private final Pageable pageable = Pageable.ofSize(20).withPage(0);
 
     @BeforeEach
-    public void createObject() {
+    void createObject() {
         final String title = "BYN";
         final String description = "Белорусский рубль";
 
@@ -75,7 +74,7 @@ public class CurrencyServiceTest {
 
     @DisplayName("Method \"Currency create(Currency currency)\"")
     @Test
-    public void givenCurrency_whenCreateCurrency_thenReturnCurrency() {
+    void givenCurrency_whenCreateCurrency_thenReturnCurrency() {
         given(generator.generateUUID())
                 .willReturn(existingId);
         given(generator.now())
@@ -95,7 +94,7 @@ public class CurrencyServiceTest {
 
     @DisplayName("Method \"Page<Currency> get(Pageable pageable)\": NOT EMPTY page")
     @Test
-    public void givenPageable_whenGet_thenReturnPage() {
+    void givenPageable_whenGet_thenReturnPage() {
         Page<CurrencyEntity> entities = getPageWithEntity(currencyEntity);
         given(repository.findByOrderByTitle(pageable))
                 .willReturn(entities);
@@ -110,7 +109,7 @@ public class CurrencyServiceTest {
 
     @DisplayName("Method \"Page<Currency> get(Pageable pageable)\": EMPTY page")
     @Test
-    public void givenPageable_whenGet_thenReturnEmptyPage() {
+    void givenPageable_whenGet_thenReturnEmptyPage() {
         Page<CurrencyEntity> entities = getEmptyPageWithEntity();
         given(repository.findByOrderByTitle(pageable))
                 .willReturn(entities);
@@ -123,7 +122,7 @@ public class CurrencyServiceTest {
 
     @DisplayName("Method \"Currency get(UUID uuid)\": EXISTENT uuid")
     @Test
-    public void givenExistentCurrencyId_whenGetById_thenReturnCurrency() {
+    void givenExistentCurrencyId_whenGetById_thenReturnCurrency() {
         given(repository.findById(existingId))
                 .willReturn(Optional.of(currencyEntity));
         given(conversionService.convert(currencyEntity, Currency.class))
@@ -136,7 +135,7 @@ public class CurrencyServiceTest {
 
     @DisplayName("Method \"Currency get(UUID uuid)\": NONEXISTENT uuid")
     @Test
-    public void givenNonexistentCurrencyId_whenGetById_thenReturnNull() {
+    void givenNonexistentCurrencyId_whenGetById_thenReturnNull() {
         given(repository.findById(nonexistentId))
                 .willReturn(Optional.empty());
 

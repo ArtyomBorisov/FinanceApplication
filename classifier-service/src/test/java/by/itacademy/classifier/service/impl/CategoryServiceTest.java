@@ -21,8 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class CategoryServiceTest {
-
+class CategoryServiceTest {
     @Mock
     private CategoryRepository repository;
     @Mock
@@ -42,7 +41,7 @@ public class CategoryServiceTest {
     private final Pageable pageable = Pageable.ofSize(20).withPage(0);
 
     @BeforeEach
-    public void createObjects() {
+    void createObjects() {
         final String title = "Книги";
         categoryForSaving = Category.Builder.createBuilder()
                 .setTitle(title)
@@ -65,7 +64,7 @@ public class CategoryServiceTest {
 
     @DisplayName("Method \"Category create(Category category)\"")
     @Test
-    public void givenCategory_whenCreateCategory_thenReturnCategory() {
+    void givenCategory_whenCreateCategory_thenReturnCategory() {
         given(generator.generateUUID())
                 .willReturn(existingId);
         given(generator.now())
@@ -85,7 +84,7 @@ public class CategoryServiceTest {
 
     @DisplayName("Method \"Page<Category> get(Pageable pageable)\": NOT EMPTY page")
     @Test
-    public void givenPageable_whenGet_thenReturnPage() {
+    void givenPageable_whenGet_thenReturnPage() {
         Page<CategoryEntity> entities = getPageWithEntity(categoryEntity);
         given(repository.findByOrderByTitle(pageable))
                 .willReturn(entities);
@@ -100,7 +99,7 @@ public class CategoryServiceTest {
 
     @DisplayName("Method \"Page<Category> get(Pageable pageable)\": EMPTY page")
     @Test
-    public void givenPageable_whenGet_thenReturnEmptyPage() {
+    void givenPageable_whenGet_thenReturnEmptyPage() {
         Page<CategoryEntity> entities = getEmptyPageWithEntity();
         given(repository.findByOrderByTitle(pageable))
                 .willReturn(entities);
@@ -113,7 +112,7 @@ public class CategoryServiceTest {
 
     @DisplayName("Method \"Category get(UUID uuid)\": EXISTENT uuid")
     @Test
-    public void givenExistentCategoryId_whenGetById_thenReturnCategory() {
+    void givenExistentCategoryId_whenGetById_thenReturnCategory() {
         given(repository.findById(existingId))
                 .willReturn(Optional.of(categoryEntity));
         given(conversionService.convert(categoryEntity, Category.class))
@@ -126,7 +125,7 @@ public class CategoryServiceTest {
 
     @DisplayName("Method \"Category get(UUID uuid)\": NONEXISTENT uuid")
     @Test
-    public void givenNonexistentCategoryId_whenGetById_thenReturnNull() {
+    void givenNonexistentCategoryId_whenGetById_thenReturnNull() {
         given(repository.findById(nonexistentId))
                 .willReturn(Optional.empty());
 
